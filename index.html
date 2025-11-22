@@ -636,12 +636,12 @@ body {
                 </div>
 
                 <div class="form-group">
-                    <label for="title-input" class="form-label">知识点名称/题目</label>
+                    <label for="title-input" id="title-label" class="form-label">知识点名称/题目</label>
                     <input type="text" id="title-input" class="form-input" placeholder="例如：快速排序算法 / 毛泽东思想活的灵魂" required>
                 </div>
                 
                 <div class="form-group">
-                    <label for="content-input" class="form-label">知识点内容/解题思路</label>
+                    <label for="content-input" id="content-label" class="form-label">知识点内容/解题思路</label>
                     <textarea id="content-input" class="form-textarea" placeholder="详细记录知识点、公式、解题步骤或思路..." required></textarea>
                 </div>
                 
@@ -931,6 +931,9 @@ function initializeEventListeners() {
     const knowledgeForm = document.getElementById('knowledge-form');
     if (knowledgeForm) knowledgeForm.addEventListener('submit', handleAddKnowledge);
 
+    const subjectSelect = document.getElementById('subject-select');
+    if (subjectSelect) subjectSelect.addEventListener('change', handleSubjectChange);
+
     const exportTriggerBtn = document.getElementById('export-trigger-btn');
     if (exportTriggerBtn) exportTriggerBtn.addEventListener('click', showExportModal);
 
@@ -968,6 +971,32 @@ function initializeEventListeners() {
         showSyncStatus('网络已断开', 2000);
     });
 }
+
+// 根据学科更新表单标签
+function handleSubjectChange(e) {
+    const subject = e.target.value;
+    updateFormLabels(subject);
+}
+
+function updateFormLabels(subject) {
+    const titleLabel = document.getElementById('title-label');
+    const titleInput = document.getElementById('title-input');
+    const contentLabel = document.getElementById('content-label');
+    const contentInput = document.getElementById('content-input');
+
+    if (subject === '英语') {
+        titleLabel.textContent = '作文模板 / 语句';
+        titleInput.placeholder = '例如：It is universally acknowledged that...';
+        contentLabel.textContent = '中文释义 / 使用场景';
+        contentInput.placeholder = '例如：众所周知...（用于引出普遍观点）';
+    } else {
+        titleLabel.textContent = '知识点名称/题目';
+        titleInput.placeholder = '例如：快速排序算法 / 毛泽东思想活的灵魂';
+        contentLabel.textContent = '知识点内容/解题思路';
+        contentInput.placeholder = '详细记录知识点、公式、解题步骤或思路...';
+    }
+}
+
 
 // 登录处理
 async function handleLogin(e) {
@@ -1123,11 +1152,15 @@ async function handleAddKnowledge(e) {
         createdAt: new Date().toISOString()
     };
 
-    knowledgeData[today].push(newKnowledge);
+    // 新知识点添加到当天列表的开头
+    knowledgeData[today].unshift(newKnowledge);
 
     if (knowledgeForm) knowledgeForm.reset();
     if (titleInput) titleInput.focus();
     
+    // 重置表单标签
+    updateFormLabels('');
+
     renderKnowledge();
     showRandomEncouragement();
 
@@ -1219,7 +1252,7 @@ function renderKnowledge() {
     }
 
     sortedDates.forEach(dateStr => {
-        const dayKnowledge = knowledgeData[dateStr];
+        let dayKnowledge = knowledgeData[dateStr];
         const dateObj = new Date(dateStr + 'T00:00:00');
         const formattedDate = dateObj.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
 
@@ -1230,6 +1263,9 @@ function renderKnowledge() {
         dateHeader.style.cssText = 'font-size: 1.125rem; font-weight: 600; color: #374151; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem; margin-bottom: 1rem;';
         dateHeader.textContent = `${formattedDate} (${dayKnowledge.length} 个知识点)`;
         daySection.appendChild(dateHeader);
+
+        // 按创建时间倒序排列当天知识点，确保最新的在最上面
+        dayKnowledge.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
         dayKnowledge.forEach(knowledge => {
             const knowledgeItem = createKnowledgeItem(knowledge, dateStr);
