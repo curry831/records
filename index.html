@@ -84,7 +84,7 @@ body {
     margin-bottom: 0.25rem;
 }
 
-.form-input, .-form-select, .form-textarea {
+.form-input, .form-select, .form-textarea {
     width: 100%;
     padding: 0.75rem;
     border: 1px solid #d1d5db;
@@ -692,7 +692,7 @@ body {
 <div id="export-modal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3 class="modal-title">选择导出日期</h3>
+            <h3 class="modal-title">选择导出内容</h3>
             <button class="modal-close" id="close-modal-btn">&times;</button>
         </div>
         <div id="export-options">
@@ -1431,6 +1431,19 @@ function hashPassword(password) {
     return hash.toString();
 }
 
+// 获取所有学科
+function getUniqueSubjects() {
+    const subjects = new Set();
+    for (const date in knowledgeData) {
+        knowledgeData[date].forEach(item => {
+            if (item.subject) {
+                subjects.add(item.subject);
+            }
+        });
+    }
+    return Array.from(subjects).sort();
+}
+
 // 导出相关函数
 function showExportModal() {
     const modal = document.getElementById('export-modal');
@@ -1438,31 +1451,30 @@ function showExportModal() {
     
     if (!modal || !exportOptions) return;
     
-    const dates = Object.keys(knowledgeData).sort((a, b) => new Date(b) - new Date(a));
     exportOptions.innerHTML = '';
 
-    if (dates.length === 0) {
-        exportOptions.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 1rem;">没有可导出的数据。</p>';
-    } else {
-        const exportAllBtn = document.createElement('button');
-        exportAllBtn.textContent = '📦 导出全部数据';
-        exportAllBtn.className = 'btn btn-secondary';
-        exportAllBtn.style.cssText = 'width: 100%; margin-bottom: 0.5rem; justify-content: flex-start;';
-        exportAllBtn.onclick = exportAllData;
-        exportOptions.appendChild(exportAllBtn);
+    const exportAllBtn = document.createElement('button');
+    exportAllBtn.textContent = '📦 导出全部数据';
+    exportAllBtn.className = 'btn btn-secondary';
+    exportAllBtn.style.cssText = 'width: 100%; margin-bottom: 0.5rem; justify-content: flex-start;';
+    exportAllBtn.onclick = exportAllData;
+    exportOptions.appendChild(exportAllBtn);
 
-        dates.forEach(dateStr => {
-            const dayKnowledge = knowledgeData[dateStr];
-            const dateObj = new Date(dateStr + 'T00:00:00');
-            const formattedDate = dateObj.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
-
-            const dateBtn = document.createElement('button');
-            dateBtn.textContent = `${formattedDate} (${dayKnowledge.length} 个知识点)`;
-            dateBtn.className = 'btn';
-            dateBtn.style.cssText = 'width: 100%; margin-bottom: 0.5rem; justify-content: flex-start; background-color: #f3f4f6; color: #374151;';
-            dateBtn.onclick = () => exportDataForDate(dateStr, formattedDate);
-            exportOptions.appendChild(dateBtn);
+    const subjects = getUniqueSubjects();
+    if (subjects.length > 0) {
+        subjects.forEach(subject => {
+            const subjectBtn = document.createElement('button');
+            subjectBtn.textContent = `📚 导出 "${subject}"`;
+            subjectBtn.className = 'btn';
+            subjectBtn.style.cssText = 'width: 100%; margin-bottom: 0.5rem; justify-content: flex-start; background-color: #f3f4f6; color: #374151;';
+            subjectBtn.onclick = () => exportDataForSubject(subject);
+            exportOptions.appendChild(subjectBtn);
         });
+    } else {
+        const noDataMsg = document.createElement('p');
+        noDataMsg.style.cssText = 'text-align: center; color: #6b7280; padding: 1rem;';
+        noDataMsg.textContent = '没有可按学科导出的数据。';
+        exportOptions.appendChild(noDataMsg);
     }
 
     modal.classList.add('show');
@@ -1477,34 +1489,35 @@ function hideExportModal() {
     }
 }
 
-function exportDataForDate(dateStr, formattedDate) {
-    const knowledgeForDate = knowledgeData[dateStr] || [];
+function exportDataForSubject(subject) {
     const allKnowledge = [];
-
-    knowledgeForDate.forEach(knowledge => {
-        allKnowledge.push({
-            '日期': dateStr,
-            '学科': knowledge.subject,
-            '知识点名称': knowledge.title,
-            '内容': knowledge.content,
-            '标签': knowledge.tags ? knowledge.tags.join(', ') : '',
-            '掌握状态': knowledge.mastered ? '已掌握' : '学习中',
-            '创建时间': knowledge.createdAt
+    for (const date in knowledgeData) {
+        knowledgeData[date].forEach(knowledge => {
+            if (knowledge.subject === subject) {
+                allKnowledge.push({
+                    '日期': date,
+                    '学科': knowledge.subject,
+                    '知识点名称': knowledge.title,
+                    '内容': knowledge.content,
+                    '标签': knowledge.tags ? knowledge.tags.join(', ') : '',
+                    '掌握状态': knowledge.mastered ? '已掌握' : '学习中',
+                    '创建时间': knowledge.createdAt
+                });
+            }
         });
-    });
+    }
 
     if (allKnowledge.length === 0) {
-        alert('该日期没有数据可以导出！');
+        alert(`没有找到 "${subject}" 学科的数据可以导出！`);
         return;
     }
 
-    createAndDownloadExcel(allKnowledge, `考研知识点_${dateStr}.xlsx`);
+    createAndDownloadExcel(allKnowledge, `考研知识点_${subject}.xlsx`);
     hideExportModal();
 }
 
 function exportAllData() {
     const allKnowledge = [];
-
     for (const date in knowledgeData) {
         knowledgeData[date].forEach(knowledge => {
             allKnowledge.push({
@@ -1696,12 +1709,17 @@ function processExcelData(data) {
             if (col.includes('知识点名称') || col.includes('题目') || col.toLowerCase().includes('title')) titleColumn = col;
         }
 
-        if (!dateColumn || !subjectColumn || !titleColumn) {
-            throw new Error(`Excel文件格式不正确，必须包含"日期"、"学科"和"知识点名称"列。找到的列: ${columns.join(', ')}`);
+        if (!subjectColumn || !titleColumn) {
+            throw new Error(`Excel文件格式不正确，必须包含"学科"和"知识点名称"列。找到的列: ${columns.join(', ')}`);
         }
 
         const standardizedData = jsonData.map(row => {
-            const newRow = { '日期': row[dateColumn], '学科': row[subjectColumn], '知识点名称': row[titleColumn] };
+            const newRow = {};
+            // 如果没有日期列，则默认为今天
+            newRow['日期'] = dateColumn ? row[dateColumn] : new Date().toISOString().split('T')[0];
+            newRow['学科'] = row[subjectColumn];
+            newRow['知识点名称'] = row[titleColumn];
+
             for (const col of columns) {
                 if (col === dateColumn || col === subjectColumn || col === titleColumn) continue;
                 if (col.includes('内容') || col.toLowerCase().includes('content')) newRow['内容'] = row[col];
