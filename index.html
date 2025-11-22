@@ -1,0 +1,1891 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>考研知识点记录本</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* 基础样式重置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Noto Sans SC', sans-serif;
+    background-color: #f8fafc; /* 更清爽的背景色 */
+    color: #1e293b;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* 容器样式 */
+.container {
+    max-width: 1000px; /* 稍微加宽以适应更多内容 */
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+@media (min-width: 640px) {
+    .container {
+        padding: 0 1.5rem;
+    }
+}
+
+/* 登录容器 */
+.login-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); /* 专注的蓝色调 */
+    z-index: 1000;
+}
+
+.login-card {
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    padding: 2rem;
+    width: 100%;
+    max-width: 28rem;
+    margin: 1rem;
+}
+
+/* 应用容器 */
+.app-container {
+    display: none;
+    min-height: 100vh;
+    background-color: #f8fafc;
+}
+
+/* 表单样式 */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.25rem;
+}
+
+.form-input, .-form-select, .form-textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 1rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    background-color: white;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 6rem; /* 增加默认高度 */
+}
+
+/* 按钮样式 */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+    border: none;
+    border-radius: 0.375rem;
+    font-size: 1rem;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+.btn-primary {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #2563eb;
+}
+
+.btn-secondary {
+    background-color: #10b981;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #059669;
+}
+
+.btn-danger {
+    background-color: #ef4444;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #dc2626;
+}
+
+.btn-full {
+    width: 100%;
+}
+
+/* 卡片样式 */
+.card {
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* 知识点项样式 */
+.knowledge-item {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    transition: box-shadow 0.15s ease-in-out, transform 0.15s ease-in-out;
+}
+
+.knowledge-item:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transform: translateY(-2px);
+}
+
+.knowledge-item.mastered {
+    background-color: #f0fdf4; /* 绿色背景表示已掌握 */
+    border-color: #22c55e;
+}
+
+.knowledge-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+
+.knowledge-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #1e40af; /* 深蓝色标题 */
+    word-wrap: break-word;
+    flex-grow: 1;
+    margin-right: 1rem;
+}
+
+.knowledge-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.knowledge-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    font-size: 1.25rem;
+    transition: transform 0.15s ease-in-out;
+}
+
+.knowledge-btn:hover {
+    transform: scale(1.1);
+}
+
+.knowledge-detail {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+}
+
+.knowledge-content {
+    font-size: 1rem;
+    color: #334155;
+    line-height: 1.7;
+    margin-bottom: 0.75rem;
+    white-space: pre-wrap; /* 保留换行和空格 */
+}
+
+.knowledge-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.knowledge-tag {
+    display: inline-block;
+    background-color: #e0e7ff;
+    color: #3730a3;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+}
+
+/* 统计卡片 */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.stat-card {
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    padding: 1rem;
+    text-align: center;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-bottom: 0.25rem;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+/* 头部样式 */
+.header {
+    background: white;
+    border-bottom: 1px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.user-name {
+    font-weight: 500;
+}
+
+.header-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.header-btn {
+    background: none;
+    border: none;
+    color: #3b82f6;
+    cursor: pointer;
+    font-size: 0.875rem;
+    text-decoration: none;
+}
+
+.header-btn:hover {
+    color: #2563eb;
+}
+
+.header-btn.danger {
+    color: #ef4444;
+}
+
+.header-btn.danger:hover {
+    color: #dc2626;
+}
+
+/* 模态框样式 */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 32rem;
+    max-height: 80vh;
+    overflow-y: auto;
+    margin: 1rem;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.modal-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #6b7280;
+}
+
+.modal-close:hover {
+    color: #374151;
+}
+
+/* 加载动画 */
+.loading {
+    display: inline-block;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid #f3f4f6;
+    border-top: 2px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 提示消息 */
+.toast {
+    position: fixed;
+    top: 1rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background-color: #10b981;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.375rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    opacity: 0;
+    transition: all 0.3s ease-in-out;
+    z-index: 2000;
+}
+
+.toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+/* 同步状态 */
+.sync-status {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    display: none;
+    z-index: 1000;
+}
+
+.sync-status.show {
+    display: block;
+}
+
+/* 响应式设计 */
+@media (max-width: 640px) {
+    .modal-content {
+        margin: 0.5rem;
+        max-height: 90vh;
+    }
+    
+    .knowledge-header {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .knowledge-actions {
+        align-self: flex-end;
+    }
+}
+
+/* 动画效果 */
+.fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 文件拖放区域 */
+.file-drop {
+    border: 2px dashed #d1d5db;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+.file-drop:hover {
+    border-color: #3b82f6;
+    background-color: #f8fafc;
+}
+
+.file-drop.dragover {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
+}
+
+/* 错误消息 */
+.error-message {
+    color: #ef4444;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background-color: #fef2f2;
+    border-radius: 0.25rem;
+    display: none;
+}
+
+.error-message.show {
+    display: block;
+}
+
+/* 表格样式 */
+.table-container {
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 1rem 0;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.table th,
+.table td {
+    border: 1px solid #e5e7eb;
+    padding: 0.5rem;
+    text-align: left;
+}
+
+.table th {
+    background-color: #f9fafb;
+    position: sticky;
+    top: 0;
+}
+
+.table tr:nth-child(even) {
+    background-color: #f9fafb;
+}
+
+.table tr:hover {
+    background-color: #f3f4f6;
+}
+</style>
+</head>
+<body>
+<!-- 加载遮罩 -->
+<div id="loading-overlay" class="loading-overlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.9); display: flex; justify-content: center; align-items: center; z-index: 9999;">
+    <div style="text-align: center;">
+        <div class="loading"></div>
+        <p style="margin-top: 0.5rem; color: #374151;">正在初始化应用...</p>
+        <p id="loading-status" style="font-size: 0.875rem; color: #6b7280; margin-top: 0.25rem;"></p>
+    </div>
+</div>
+
+<!-- 登录界面 -->
+<div id="login-container" class="login-container">
+    <div class="login-card">
+        <h2 style="font-size: 1.5rem; font-weight: 700; text-align: center; margin-bottom: 1.5rem;">🎓 考研知识点记录本</h2>
+        
+        <form id="login-form">
+            <div class="form-group">
+                <label for="username" class="form-label">用户名</label>
+                <input type="text" id="username" class="form-input" placeholder="输入您的用户名" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password" class="form-label">密码</label>
+                <input type="password" id="password" class="form-input" placeholder="输入您的密码" required>
+            </div>
+            
+            <div class="form-group">
+                <label style="display: flex; align-items: center; font-size: 0.875rem; color: #6b7280;">
+                    <input type="checkbox" id="use-local" style="margin-right: 0.5rem;">
+                    使用本地存储（离线模式）
+                </label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-full" id="login-btn">
+                <span id="login-text">登录</span>
+                <div id="login-spinner" class="loading" style="display: none; margin-left: 0.5rem;"></div>
+            </button>
+            
+            <p style="text-align: center; font-size: 0.875rem; color: #6b7280; margin-top: 1rem;">
+                首次使用将自动创建账户
+            </p>
+        </form>
+    </div>
+</div>
+
+<!-- 主应用界面 -->
+<div id="app-container" class="app-container">
+    <!-- 用户信息栏 -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="user-info">
+                    <span>用户:</span>
+                    <span id="current-user" class="user-name"></span>
+                </div>
+                <div class="header-actions">
+                    <button id="sync-btn" class="header-btn">
+                        <div id="sync-spinner" class="loading" style="display: none; margin-right: 0.25rem;"></div>
+                        <span id="sync-text">手动同步</span>
+                    </button>
+                    <button id="logout-btn" class="header-btn danger">退出登录</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container" style="padding-top: 1.5rem; padding-bottom: 3rem;">
+        <!-- 标题 -->
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h1 style="font-size: 2rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem;">🎓 考研知识点记录本</h1>
+            <p style="color: #64748b;">高效记录，系统复习，成功上岸</p>
+        </div>
+
+        <!-- 添加知识点表单 -->
+        <section class="card">
+            <h2 style="font-size: 1.25rem; font-weight: 600; color: #374151; margin-bottom: 1rem;">添加新知识点</h2>
+            
+            <form id="knowledge-form">
+                <div class="form-group">
+                    <label for="subject-select" class="form-label">学科</label>
+                    <select id="subject-select" class="form-select" required>
+                        <option value="" disabled selected>请选择学科</option>
+                        <option value="英语">英语</option>
+                        <option value="政治">政治</option>
+                        <option value="数学">数学</option>
+                        <option value="数据结构">数据结构</option>
+                        <option value="计算机操作系统">计算机操作系统</option>
+                        <option value="计算机网络">计算机网络</option>
+                        <option value="计算机组成原理">计算机组成原理</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="title-input" class="form-label">知识点名称/题目</label>
+                    <input type="text" id="title-input" class="form-input" placeholder="例如：快速排序算法 / 毛泽东思想活的灵魂" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="content-input" class="form-label">知识点内容/解题思路</label>
+                    <textarea id="content-input" class="form-textarea" placeholder="详细记录知识点、公式、解题步骤或思路..." required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="tags-input" class="form-label">标签</label>
+                    <input type="text" id="tags-input" class="form-input" placeholder="添加标签，用空格分隔（如：排序算法 第一章 重点）">
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-full">记录知识点</button>
+            </form>
+        </section>
+
+        <!-- 导入导出 -->
+        <section style="margin-bottom: 1.5rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <button id="export-trigger-btn" class="btn btn-secondary">📊 导出为Excel</button>
+                <button id="import-trigger-btn" class="btn btn-primary">📥 导入Excel文件</button>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">总知识点数</div>
+                    <div id="total-knowledge" class="stat-value" style="color: #3b82f6;">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">学习天数</div>
+                    <div id="study-days" class="stat-value" style="color: #10b981;">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">今日复习</div>
+                    <div id="today-knowledge" class="stat-value" style="color: #f59e0b;">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">已掌握</div>
+                    <div id="mastered-knowledge" class="stat-value" style="color: #22c55e;">0</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 知识点列表 -->
+        <section id="knowledge-list-container">
+            <!-- 知识点将在这里动态插入 -->
+        </section>
+    </div>
+</div>
+
+<!-- 导出模态框 -->
+<div id="export-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">选择导出日期</h3>
+            <button class="modal-close" id="close-modal-btn">&times;</button>
+        </div>
+        <div id="export-options">
+            <!-- 选项将在这里动态生成 -->
+        </div>
+    </div>
+</div>
+
+<!-- 导入模态框 -->
+<div id="import-modal" class="modal">
+    <div class="modal-content" style="max-width: 42rem;">
+        <div class="modal-header">
+            <h3 class="modal-title">导入Excel文件</h3>
+            <button class="modal-close" id="close-import-modal-btn">&times;</button>
+        </div>
+        
+        <div class="file-drop" id="file-drop-zone">
+            <input type="file" id="import-file-input" accept=".xlsx,.xls" style="display: none;">
+            <div style="color: #6b7280;">
+                <svg style="width: 3rem; height: 3rem; margin: 0 auto 0.75rem; color: #9ca3af;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                <p style="font-size: 0.875rem;">点击选择文件或拖拽Excel文件到此处</p>
+                <p style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.25rem;">支持 .xlsx 和 .xls 格式</p>
+            </div>
+        </div>
+        
+        <div id="import-error" class="error-message"></div>
+        
+        <div style="margin-bottom: 1rem;">
+            <h4 style="font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.5rem;">导入选项</h4>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <label style="display: flex; align-items: center; font-size: 0.875rem;">
+                    <input type="radio" name="import-option" value="merge" checked style="margin-right: 0.5rem;">
+                    合并导入（保留现有数据，跳过重复知识点）
+                </label>
+                <label style="display: flex; align-items: center; font-size: 0.875rem;">
+                    <input type="radio" name="import-option" value="replace" style="margin-right: 0.5rem;">
+                    替换导入（删除现有数据，完全替换）
+                </label>
+            </div>
+        </div>
+        
+        <div id="import-preview" style="display: none;">
+            <h4 style="font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.5rem;">数据预览</h4>
+            <div class="table-container">
+                <table class="table" id="preview-table">
+                    <!-- 预览数据将在这里显示 -->
+                </table>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                <p id="import-summary" style="font-size: 0.875rem; color: #6b7280;"></p>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button id="cancel-import-btn" class="btn" style="background-color: #e5e7eb; color: #374151;">取消</button>
+                    <button id="confirm-import-btn" class="btn btn-primary">确认导入</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="import-status" style="display: none; text-align: center; padding: 1rem;">
+            <div class="loading" style="margin: 0 auto 0.5rem;"></div>
+            <p style="font-size: 0.875rem; color: #6b7280;">正在导入数据...</p>
+        </div>
+    </div>
+</div>
+
+<!-- 提示消息 -->
+<div id="encouragement-toast" class="toast">
+    <span id="encouragement-text"></span>
+</div>
+
+<!-- 同步状态 -->
+<div id="sync-status" class="sync-status">
+    <span id="sync-status-text">同步中...</span>
+</div>
+
+<script>
+// Firebase 配置
+const firebaseConfig = {
+    apiKey: "AIzaSyBPLuMktx7vBuqmh6KzIyRlNHK4yh4j5OY",
+    authDomain: "words-43d1b.firebaseapp.com",
+    databaseURL: "https://words-43d1b-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "words-43d1b",
+    storageBucket: "words-43d1b.firebasestorage.app",
+    messagingSenderId: "992209854334",
+    appId: "1:992209854334:web:e862a34544b49a243e1d2f",
+    measurementId: "G-982EDQG7X0"
+};
+
+// 应用状态
+let database = null;
+let firebaseAvailable = false;
+let currentUser = null;
+let knowledgeData = {}; // 改为 knowledgeData
+let isOnline = navigator.onLine;
+let useLocalMode = false;
+let importData = null;
+
+// 加载状态管理
+const loadingOverlay = document.getElementById('loading-overlay');
+const loadingStatus = document.getElementById('loading-status');
+
+function showLoading(message) {
+    if (loadingStatus) {
+        loadingStatus.textContent = message;
+    }
+}
+
+function hideLoading() {
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'none';
+    }
+}
+
+// Firebase SDK 加载器
+class FirebaseLoader {
+    async loadFirebaseSDK() {
+        showLoading('正在加载 Firebase SDK...');
+
+        try {
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('加载超时')), 10000);
+            });
+
+            await Promise.race([
+                this.loadScript('https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js'),
+                timeoutPromise
+            ]);
+
+            await this.loadScript('https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js');
+            await this.loadScript('https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js');
+
+            await this.delay(1000);
+
+            if (typeof firebase !== 'undefined') {
+                showLoading('✅ Firebase SDK 加载成功！');
+                await this.delay(500);
+                hideLoading();
+                return true;
+            } else {
+                throw new Error('Firebase 未正确加载');
+            }
+        } catch (error) {
+            console.error('Firebase 加载失败:', error);
+            showLoading('⚠️ Firebase 加载失败，将使用本地模式');
+            await this.delay(2000);
+            hideLoading();
+            return false;
+        }
+    }
+
+    loadScript(src) {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = src;
+            script.async = true;
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+}
+
+const firebaseLoader = new FirebaseLoader();
+
+window.addEventListener('DOMContentLoaded', async () => {
+    console.log('DOM 加载完成，开始初始化应用');
+    
+    const initTimeout = setTimeout(() => {
+        console.log('初始化超时，强制隐藏加载界面');
+        hideLoading();
+        initializeApp(true);
+    }, 15000);
+    
+    try {
+        const firebaseLoaded = await firebaseLoader.loadFirebaseSDK();
+        clearTimeout(initTimeout);
+        console.log('初始化应用，Firebase 可用:', firebaseLoaded);
+        initializeApp(!firebaseLoaded);
+    } catch (error) {
+        clearTimeout(initTimeout);
+        console.error('初始化过程中出错:', error);
+        hideLoading();
+        initializeApp(true);
+    }
+});
+
+function initializeApp(firebaseOnly = false) {
+    hideLoading();
+    
+    if (!firebaseOnly && typeof firebase !== 'undefined') {
+        try {
+            firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+            firebaseAvailable = true;
+            console.log('Firebase 初始化成功');
+        } catch (error) {
+            console.error('Firebase 初始化失败:', error);
+        }
+    } else {
+        console.log('Firebase 不可用，将使用本地模式');
+    }
+
+    const loginContainer = document.getElementById('login-container');
+    const appContainer = document.getElementById('app-container');
+    
+    if (loginContainer) loginContainer.style.display = 'flex';
+    if (appContainer) appContainer.style.display = 'none';
+
+    if (!firebaseAvailable) {
+        const useLocalCheckbox = document.getElementById('use-local');
+        if (useLocalCheckbox) {
+            useLocalCheckbox.checked = true;
+            useLocalCheckbox.disabled = true;
+        }
+        useLocalMode = true;
+    }
+
+    initializeEventListeners();
+}
+
+function initializeEventListeners() {
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) loginForm.addEventListener('submit', handleLogin);
+
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+
+    const syncBtn = document.getElementById('sync-btn');
+    if (syncBtn) syncBtn.addEventListener('click', handleSync);
+
+    const knowledgeForm = document.getElementById('knowledge-form');
+    if (knowledgeForm) knowledgeForm.addEventListener('submit', handleAddKnowledge);
+
+    const exportTriggerBtn = document.getElementById('export-trigger-btn');
+    if (exportTriggerBtn) exportTriggerBtn.addEventListener('click', showExportModal);
+
+    const importTriggerBtn = document.getElementById('import-trigger-btn');
+    if (importTriggerBtn) importTriggerBtn.addEventListener('click', showImportModal);
+
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    if (closeModalBtn) closeModalBtn.addEventListener('click', hideExportModal);
+
+    const closeImportModalBtn = document.getElementById('close-import-modal-btn');
+    if (closeImportModalBtn) closeImportModalBtn.addEventListener('click', hideImportModal);
+
+    const cancelImportBtn = document.getElementById('cancel-import-btn');
+    if (cancelImportBtn) cancelImportBtn.addEventListener('click', hideImportModal);
+
+    const confirmImportBtn = document.getElementById('confirm-import-btn');
+    if (confirmImportBtn) confirmImportBtn.addEventListener('click', handleImport);
+
+    initializeFileDrop();
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            hideExportModal();
+            hideImportModal();
+        }
+    });
+
+    window.addEventListener('online', () => {
+        isOnline = true;
+        showSyncStatus('网络已连接', 2000);
+    });
+
+    window.addEventListener('offline', () => {
+        isOnline = false;
+        showSyncStatus('网络已断开', 2000);
+    });
+}
+
+// 登录处理
+async function handleLogin(e) {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const useLocalCheckbox = document.getElementById('use-local');
+    
+    useLocalMode = useLocalCheckbox.checked || !firebaseAvailable;
+
+    if (!username || !password) {
+        alert('请输入用户名和密码');
+        return;
+    }
+
+    const hashedPassword = hashPassword(password);
+
+    try {
+        const loginText = document.getElementById('login-text');
+        const loginSpinner = document.getElementById('login-spinner');
+        const loginBtn = document.getElementById('login-btn');
+
+        if (loginText) loginText.style.display = 'none';
+        if (loginSpinner) loginSpinner.style.display = 'inline-block';
+        if (loginBtn) loginBtn.disabled = true;
+
+        showSyncStatus('登录中...');
+        console.log(`尝试登录用户: ${username}, 使用本地模式: ${useLocalMode}`);
+
+        if (useLocalMode) {
+            currentUser = username;
+            knowledgeData = JSON.parse(localStorage.getItem('knowledge_' + username) || '{}');
+            console.log('本地存储模式登录成功');
+            showApp();
+        } else {
+            if (!database) throw new Error('Firebase 未初始化');
+            const userRef = database.ref('users/' + username);
+            const snapshot = await userRef.once('value');
+
+            if (snapshot.exists()) {
+                const userData = snapshot.val();
+                if (userData.password === hashedPassword) {
+                    currentUser = username;
+                    await loadUserKnowledge();
+                    showApp();
+                } else {
+                    alert('密码错误');
+                }
+            } else {
+                await userRef.set({
+                    password: hashedPassword,
+                    createdAt: new Date().toISOString(),
+                    lastLogin: new Date().toISOString()
+                });
+                currentUser = username;
+                knowledgeData = {};
+                showApp();
+            }
+        }
+    } catch (error) {
+        console.error('登录错误:', error);
+        if (!useLocalMode) {
+            const useLocalFallback = confirm(`云端登录失败: ${error.message}\n\n是否使用本地存储模式？\n（数据将保存在浏览器中，无法跨设备同步）`);
+            if (useLocalFallback) {
+                useLocalMode = true;
+                const useLocalCheckbox = document.getElementById('use-local');
+                if (useLocalCheckbox) useLocalCheckbox.checked = true;
+                currentUser = username;
+                knowledgeData = JSON.parse(localStorage.getItem('knowledge_' + username) || '{}');
+                showApp();
+            } else {
+                alert('登录失败，请重试');
+            }
+        } else {
+            alert('登录失败: ' + error.message);
+        }
+    } finally {
+        const loginText = document.getElementById('login-text');
+        const loginSpinner = document.getElementById('login-spinner');
+        const loginBtn = document.getElementById('login-btn');
+        if (loginText) loginText.style.display = 'inline';
+        if (loginSpinner) loginSpinner.style.display = 'none';
+        if (loginBtn) loginBtn.disabled = false;
+        showSyncStatus('');
+    }
+}
+
+// 退出登录
+function handleLogout() {
+    if (confirm('确定要退出登录吗？')) {
+        currentUser = null;
+        knowledgeData = {};
+        
+        const loginContainer = document.getElementById('login-container');
+        const appContainer = document.getElementById('app-container');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const useLocalCheckbox = document.getElementById('use-local');
+        
+        if (loginContainer) loginContainer.style.display = 'flex';
+        if (appContainer) appContainer.style.display = 'none';
+        if (usernameInput) usernameInput.value = '';
+        if (passwordInput) passwordInput.value = '';
+        if (useLocalCheckbox) useLocalCheckbox.checked = false;
+    }
+}
+
+// 手动同步
+async function handleSync() {
+    if (useLocalMode || !firebaseAvailable) {
+        showSyncStatus('本地存储模式，无需同步', 2000);
+        return;
+    }
+    if (!isOnline) {
+        showSyncStatus('网络未连接', 2000);
+        return;
+    }
+    await saveUserKnowledge();
+}
+
+// 添加知识点
+async function handleAddKnowledge(e) {
+    e.preventDefault();
+    
+    const subjectSelect = document.getElementById('subject-select');
+    const titleInput = document.getElementById('title-input');
+    const contentInput = document.getElementById('content-input');
+    const tagsInput = document.getElementById('tags-input');
+    const knowledgeForm = document.getElementById('knowledge-form');
+    
+    const subjectText = subjectSelect.value;
+    const titleText = titleInput.value.trim();
+    const contentText = contentInput.value.trim();
+    const tagsText = tagsInput.value.trim();
+
+    if (!subjectText || !titleText || !contentText) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    if (!knowledgeData[today]) {
+        knowledgeData[today] = [];
+    }
+
+    const tags = tagsText ? tagsText.split(' ').filter(tag => tag.trim() !== '') : [];
+
+    const newKnowledge = {
+        id: Date.now(),
+        subject: subjectText,
+        title: titleText,
+        content: contentText,
+        tags: tags,
+        mastered: false,
+        createdAt: new Date().toISOString()
+    };
+
+    knowledgeData[today].push(newKnowledge);
+
+    if (knowledgeForm) knowledgeForm.reset();
+    if (titleInput) titleInput.focus();
+    
+    renderKnowledge();
+    showRandomEncouragement();
+
+    if (useLocalMode || !firebaseAvailable) {
+        localStorage.setItem('knowledge_' + currentUser, JSON.stringify(knowledgeData));
+        showSyncStatus('已保存到本地', 1500);
+    } else {
+        if (isOnline) {
+            await saveUserKnowledge();
+        } else {
+            showSyncStatus('离线模式，数据将在网络恢复后同步', 3000);
+        }
+    }
+}
+
+// 显示主应用
+function showApp() {
+    const loginContainer = document.getElementById('login-container');
+    const appContainer = document.getElementById('app-container');
+    const currentUserSpan = document.getElementById('current-user');
+    
+    if (loginContainer) loginContainer.style.display = 'none';
+    if (appContainer) appContainer.style.display = 'block';
+    if (currentUserSpan) {
+        currentUserSpan.textContent = currentUser + (useLocalMode || !firebaseAvailable ? ' (本地模式)' : '');
+    }
+    renderKnowledge();
+}
+
+// 加载用户数据
+async function loadUserKnowledge() {
+    if (!currentUser) return;
+    if (useLocalMode || !firebaseAvailable) {
+        knowledgeData = JSON.parse(localStorage.getItem('knowledge_' + currentUser) || '{}');
+        return;
+    }
+    try {
+        showSyncStatus('加载数据...');
+        const knowledgeRef = database.ref('knowledge/' + currentUser);
+        const snapshot = await knowledgeRef.once('value');
+        knowledgeData = snapshot.val() || {};
+        database.ref('users/' + currentUser + '/lastLogin').set(new Date().toISOString());
+    } catch (error) {
+        console.error('加载数据错误:', error);
+        showSyncStatus('加载数据失败', 2000);
+        knowledgeData = {};
+    }
+}
+
+// 保存用户数据
+async function saveUserKnowledge() {
+    if (!currentUser) return;
+    if (useLocalMode || !firebaseAvailable) {
+        localStorage.setItem('knowledge_' + currentUser, JSON.stringify(knowledgeData));
+        showSyncStatus('已保存到本地', 1500);
+        return;
+    }
+    try {
+        const syncText = document.getElementById('sync-text');
+        const syncSpinner = document.getElementById('sync-spinner');
+        if (syncText) syncText.style.display = 'none';
+        if (syncSpinner) syncSpinner.style.display = 'inline-block';
+        showSyncStatus('保存中...');
+        await database.ref('knowledge/' + currentUser).set(knowledgeData);
+        showSyncStatus('已同步到云端', 1500);
+    } catch (error) {
+        console.error('保存数据错误:', error);
+        showSyncStatus('同步失败', 2000);
+    } finally {
+        const syncText = document.getElementById('sync-text');
+        const syncSpinner = document.getElementById('sync-spinner');
+        if (syncText) syncText.style.display = 'inline';
+        if (syncSpinner) syncSpinner.style.display = 'none';
+    }
+}
+
+// 渲染知识点列表
+function renderKnowledge() {
+    const knowledgeListContainer = document.getElementById('knowledge-list-container');
+    if (!knowledgeListContainer) return;
+    
+    knowledgeListContainer.innerHTML = '';
+    const sortedDates = Object.keys(knowledgeData).sort((a, b) => new Date(b) - new Date(a));
+
+    if (sortedDates.length === 0) {
+        knowledgeListContainer.innerHTML = '<div class="card"><p style="text-align: center; color: #6b7280;">还没有记录任何知识点，快来添加第一个吧！</p></div>';
+        updateStats();
+        return;
+    }
+
+    sortedDates.forEach(dateStr => {
+        const dayKnowledge = knowledgeData[dateStr];
+        const dateObj = new Date(dateStr + 'T00:00:00');
+        const formattedDate = dateObj.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+
+        const daySection = document.createElement('div');
+        daySection.className = 'card fade-in';
+
+        const dateHeader = document.createElement('h3');
+        dateHeader.style.cssText = 'font-size: 1.125rem; font-weight: 600; color: #374151; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem; margin-bottom: 1rem;';
+        dateHeader.textContent = `${formattedDate} (${dayKnowledge.length} 个知识点)`;
+        daySection.appendChild(dateHeader);
+
+        dayKnowledge.forEach(knowledge => {
+            const knowledgeItem = createKnowledgeItem(knowledge, dateStr);
+            daySection.appendChild(knowledgeItem);
+        });
+
+        knowledgeListContainer.appendChild(daySection);
+    });
+
+    updateStats();
+}
+
+// 创建知识点项
+function createKnowledgeItem(knowledge, dateStr) {
+    const knowledgeItem = document.createElement('div');
+    knowledgeItem.className = `knowledge-item ${knowledge.mastered ? 'mastered' : ''}`;
+    knowledgeItem.dataset.date = dateStr;
+    knowledgeItem.dataset.id = knowledge.id;
+
+    const knowledgeHeaderDiv = document.createElement('div');
+    knowledgeHeaderDiv.className = 'knowledge-header';
+
+    const knowledgeTitle = document.createElement('h4');
+    knowledgeTitle.className = 'knowledge-title';
+    knowledgeTitle.innerHTML = `${knowledge.title} <span style="font-size:0.8em; color: #3b82f6; font-weight:500;">[${knowledge.subject}]</span>`;
+
+    const actionButtons = document.createElement('div');
+    actionButtons.className = 'knowledge-actions';
+
+    const masterBtn = document.createElement('button');
+    masterBtn.className = 'knowledge-btn';
+    masterBtn.innerHTML = knowledge.mastered ? '✅' : '○';
+    masterBtn.title = knowledge.mastered ? '标记为未掌握' : '标记为已掌握';
+    masterBtn.onclick = () => toggleMastered(dateStr, knowledge.id);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'knowledge-btn';
+    deleteBtn.innerHTML = '🗑️';
+    deleteBtn.title = '删除';
+    deleteBtn.onclick = () => deleteKnowledge(dateStr, knowledge.id);
+
+    actionButtons.appendChild(masterBtn);
+    actionButtons.appendChild(deleteBtn);
+    knowledgeHeaderDiv.appendChild(knowledgeTitle);
+    knowledgeHeaderDiv.appendChild(actionButtons);
+    knowledgeItem.appendChild(knowledgeHeaderDiv);
+
+    const contentP = document.createElement('div');
+    contentP.className = 'knowledge-content';
+    contentP.textContent = knowledge.content;
+    knowledgeItem.appendChild(contentP);
+    
+    const timeP = document.createElement('p');
+    timeP.className = 'knowledge-detail';
+    const createdAt = new Date(knowledge.createdAt);
+    timeP.innerHTML = `<strong>记录时间:</strong> ${createdAt.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`;
+    knowledgeItem.appendChild(timeP);
+
+    if (knowledge.tags && knowledge.tags.length > 0) {
+        const tagsDiv = document.createElement('div');
+        tagsDiv.className = 'knowledge-tags';
+        knowledge.tags.forEach(tag => {
+            const tagSpan = document.createElement('span');
+            tagSpan.className = 'knowledge-tag';
+            tagSpan.textContent = tag;
+            tagsDiv.appendChild(tagSpan);
+        });
+        knowledgeItem.appendChild(tagsDiv);
+    }
+
+    return knowledgeItem;
+}
+
+// 更新统计
+function updateStats() {
+    let totalKnowledge = 0;
+    let masteredKnowledge = 0;
+    const today = new Date().toISOString().split('T')[0];
+    let todayKnowledgeCount = 0;
+
+    const dates = Object.keys(knowledgeData);
+    dates.forEach(date => {
+        const dayKnowledge = knowledgeData[date];
+        totalKnowledge += dayKnowledge.length;
+        dayKnowledge.forEach(k => { if (k.mastered) masteredKnowledge++; });
+        if (date === today) {
+            todayKnowledgeCount = dayKnowledge.length;
+        }
+    });
+
+    const totalKnowledgeEl = document.getElementById('total-knowledge');
+    const studyDaysEl = document.getElementById('study-days');
+    const todayKnowledgeEl = document.getElementById('today-knowledge');
+    const masteredKnowledgeEl = document.getElementById('mastered-knowledge');
+
+    if (totalKnowledgeEl) totalKnowledgeEl.textContent = totalKnowledge;
+    if (studyDaysEl) studyDaysEl.textContent = dates.length;
+    if (todayKnowledgeEl) todayKnowledgeEl.textContent = todayKnowledgeCount;
+    if (masteredKnowledgeEl) masteredKnowledgeEl.textContent = masteredKnowledge;
+}
+
+// 删除知识点
+async function deleteKnowledge(date, id) {
+    const idStr = String(id);
+    if (confirm('确定要删除这个知识点吗？')) {
+        knowledgeData[date] = knowledgeData[date].filter(k => String(k.id) !== idStr);
+        if (knowledgeData[date].length === 0) {
+            delete knowledgeData[date];
+        }
+        renderKnowledge();
+
+        if (useLocalMode || !firebaseAvailable) {
+            localStorage.setItem('knowledge_' + currentUser, JSON.stringify(knowledgeData));
+            showSyncStatus('已保存到本地', 1500);
+        } else {
+            if (isOnline) {
+                await saveUserKnowledge();
+            } else {
+                showSyncStatus('离线模式，数据将在网络恢复后同步', 3000);
+            }
+        }
+    }
+}
+
+// 切换掌握状态
+async function toggleMastered(date, id) {
+    const idStr = String(id);
+    const knowledge = knowledgeData[date].find(k => String(k.id) === idStr);
+    if (knowledge) {
+        knowledge.mastered = !knowledge.mastered;
+        renderKnowledge();
+
+        if (useLocalMode || !firebaseAvailable) {
+            localStorage.setItem('knowledge_' + currentUser, JSON.stringify(knowledgeData));
+            showSyncStatus('已保存到本地', 1500);
+        } else {
+            if (isOnline) {
+                await saveUserKnowledge();
+            } else {
+                showSyncStatus('离线模式，数据将在网络恢复后同步', 3000);
+            }
+        }
+    }
+}
+
+// 显示随机鼓励
+function showRandomEncouragement() {
+    const encouragements = [
+        "又掌握一个知识点，离成功更近一步！",
+        "坚持就是胜利，加油！",
+        "你的知识体系正在稳步构建！",
+        "Excellent! Keep it up!",
+        "今日的努力，是明日的底气！",
+        "今天的你比昨天更博学了！",
+        "Amazing! 每个知识点都是一块基石。",
+        "持之以恒，终将上岸！",
+        "你的汗水，时间看得见！",
+        "又为梦想添砖加瓦了！"
+    ];
+
+    const toast = document.getElementById('encouragement-toast');
+    const encouragementText = document.getElementById('encouragement-text');
+    
+    if (toast && encouragementText) {
+        const randomIndex = Math.floor(Math.random() * encouragements.length);
+        const message = encouragements[randomIndex];
+        encouragementText.textContent = message;
+
+        toast.classList.add('show');
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
+}
+
+// 显示同步状态
+function showSyncStatus(message, duration = 2000) {
+    const syncStatus = document.getElementById('sync-status');
+    const syncStatusText = document.getElementById('sync-status-text');
+    
+    if (syncStatus && syncStatusText) {
+        syncStatusText.textContent = message;
+        syncStatus.classList.add('show');
+        setTimeout(() => {
+            syncStatus.classList.remove('show');
+        }, duration);
+    }
+}
+
+// 密码哈希
+function hashPassword(password) {
+    let hash = 0;
+    for (let i = 0; i < password.length; i++) {
+        const char = password.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    return hash.toString();
+}
+
+// 导出相关函数
+function showExportModal() {
+    const modal = document.getElementById('export-modal');
+    const exportOptions = document.getElementById('export-options');
+    
+    if (!modal || !exportOptions) return;
+    
+    const dates = Object.keys(knowledgeData).sort((a, b) => new Date(b) - new Date(a));
+    exportOptions.innerHTML = '';
+
+    if (dates.length === 0) {
+        exportOptions.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 1rem;">没有可导出的数据。</p>';
+    } else {
+        const exportAllBtn = document.createElement('button');
+        exportAllBtn.textContent = '📦 导出全部数据';
+        exportAllBtn.className = 'btn btn-secondary';
+        exportAllBtn.style.cssText = 'width: 100%; margin-bottom: 0.5rem; justify-content: flex-start;';
+        exportAllBtn.onclick = exportAllData;
+        exportOptions.appendChild(exportAllBtn);
+
+        dates.forEach(dateStr => {
+            const dayKnowledge = knowledgeData[dateStr];
+            const dateObj = new Date(dateStr + 'T00:00:00');
+            const formattedDate = dateObj.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+
+            const dateBtn = document.createElement('button');
+            dateBtn.textContent = `${formattedDate} (${dayKnowledge.length} 个知识点)`;
+            dateBtn.className = 'btn';
+            dateBtn.style.cssText = 'width: 100%; margin-bottom: 0.5rem; justify-content: flex-start; background-color: #f3f4f6; color: #374151;';
+            dateBtn.onclick = () => exportDataForDate(dateStr, formattedDate);
+            exportOptions.appendChild(dateBtn);
+        });
+    }
+
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+
+function hideExportModal() {
+    const modal = document.getElementById('export-modal');
+    if (modal) {
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+}
+
+function exportDataForDate(dateStr, formattedDate) {
+    const knowledgeForDate = knowledgeData[dateStr] || [];
+    const allKnowledge = [];
+
+    knowledgeForDate.forEach(knowledge => {
+        allKnowledge.push({
+            '日期': dateStr,
+            '学科': knowledge.subject,
+            '知识点名称': knowledge.title,
+            '内容': knowledge.content,
+            '标签': knowledge.tags ? knowledge.tags.join(', ') : '',
+            '掌握状态': knowledge.mastered ? '已掌握' : '学习中',
+            '创建时间': knowledge.createdAt
+        });
+    });
+
+    if (allKnowledge.length === 0) {
+        alert('该日期没有数据可以导出！');
+        return;
+    }
+
+    createAndDownloadExcel(allKnowledge, `考研知识点_${dateStr}.xlsx`);
+    hideExportModal();
+}
+
+function exportAllData() {
+    const allKnowledge = [];
+
+    for (const date in knowledgeData) {
+        knowledgeData[date].forEach(knowledge => {
+            allKnowledge.push({
+                '日期': date,
+                '学科': knowledge.subject,
+                '知识点名称': knowledge.title,
+                '内容': knowledge.content,
+                '标签': knowledge.tags ? knowledge.tags.join(', ') : '',
+                '掌握状态': knowledge.mastered ? '已掌握' : '学习中',
+                '创建时间': knowledge.createdAt
+            });
+        });
+    }
+
+    if (allKnowledge.length === 0) {
+        alert('没有数据可以导出！');
+        return;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    createAndDownloadExcel(allKnowledge, `我的考研知识点_全部_${today}.xlsx`);
+    hideExportModal();
+}
+
+// 导入相关函数
+function showImportModal() {
+    const modal = document.getElementById('import-modal');
+    if (modal) {
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+        resetImportModal();
+    }
+}
+
+function hideImportModal() {
+    const modal = document.getElementById('import-modal');
+    if (modal) {
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+        resetImportModal();
+    }
+}
+
+function resetImportModal() {
+    const importFileInput = document.getElementById('import-file-input');
+    const importPreview = document.getElementById('import-preview');
+    const importStatus = document.getElementById('import-status');
+    const importError = document.getElementById('import-error');
+    const previewTable = document.getElementById('preview-table');
+    
+    if (importFileInput) importFileInput.value = '';
+    if (importPreview) importPreview.style.display = 'none';
+    if (importStatus) importStatus.style.display = 'none';
+    if (importError) importError.classList.remove('show');
+    if (previewTable) previewTable.innerHTML = '';
+    importData = null;
+}
+
+function initializeFileDrop() {
+    const fileDropZone = document.getElementById('file-drop-zone');
+    const importFileInput = document.getElementById('import-file-input');
+    
+    if (!fileDropZone || !importFileInput) return;
+
+    fileDropZone.addEventListener('click', () => {
+        importFileInput.click();
+    });
+
+    fileDropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        fileDropZone.classList.add('dragover');
+    });
+
+    fileDropZone.addEventListener('dragleave', () => {
+        fileDropZone.classList.remove('dragover');
+    });
+
+    fileDropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        fileDropZone.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFileSelect(files[0]);
+        }
+    });
+
+    importFileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleFileSelect(e.target.files[0]);
+        }
+    });
+}
+
+function handleFileSelect(file) {
+    const importError = document.getElementById('import-error');
+    const importStatus = document.getElementById('import-status');
+    
+    if (importError) importError.classList.remove('show');
+
+    if (!file.name.match(/\.(xlsx|xls)$/)) {
+        if (importError) {
+            importError.textContent = '请选择Excel文件（.xlsx 或 .xls）';
+            importError.classList.add('show');
+        }
+        return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+        if (importError) {
+            importError.textContent = '文件大小超过限制（10MB）';
+            importError.classList.add('show');
+        }
+        return;
+    }
+
+    if (importStatus) {
+        importStatus.style.display = 'block';
+        importStatus.innerHTML = '<div class="loading" style="margin: 0 auto 0.5rem;"></div><p style="font-size: 0.875rem; color: #6b7280;">正在读取文件...</p>';
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            if (typeof XLSX === 'undefined') {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+                script.onload = function() { processExcelData(data); };
+                script.onerror = function() {
+                    if (importStatus) importStatus.style.display = 'none';
+                    if (importError) {
+                        importError.textContent = '无法加载Excel处理库，请检查网络连接';
+                        importError.classList.add('show');
+                    }
+                };
+                document.head.appendChild(script);
+            } else {
+                processExcelData(data);
+            }
+        } catch (error) {
+            console.error('读取文件错误:', error);
+            if (importStatus) importStatus.style.display = 'none';
+            if (importError) {
+                importError.textContent = '读取文件失败: ' + error.message;
+                importError.classList.add('show');
+            }
+        }
+    };
+    reader.onerror = function() {
+        if (importStatus) importStatus.style.display = 'none';
+        if (importError) {
+            importError.textContent = '文件读取失败，请重试';
+            importError.classList.add('show');
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function processExcelData(data) {
+    const importStatus = document.getElementById('import-status');
+    const importError = document.getElementById('import-error');
+    
+    try {
+        if (importStatus) {
+            importStatus.innerHTML = '<div class="loading" style="margin: 0 auto 0.5rem;"></div><p style="font-size: 0.875rem; color: #6b7280;">正在解析Excel文件...</p>';
+        }
+
+        const workbook = XLSX.read(data, { type: 'array' });
+        if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+            throw new Error('Excel文件中没有工作表');
+        }
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+        if (jsonData.length === 0) {
+            throw new Error('Excel文件中没有数据');
+        }
+
+        const columns = Object.keys(jsonData[0]);
+        console.log('Excel列名:', columns);
+
+        let dateColumn = null;
+        let subjectColumn = null;
+        let titleColumn = null;
+
+        for (const col of columns) {
+            if (col.includes('日期') || col.toLowerCase().includes('date')) dateColumn = col;
+            if (col.includes('学科') || col.toLowerCase().includes('subject')) subjectColumn = col;
+            if (col.includes('知识点名称') || col.includes('题目') || col.toLowerCase().includes('title')) titleColumn = col;
+        }
+
+        if (!dateColumn || !subjectColumn || !titleColumn) {
+            throw new Error(`Excel文件格式不正确，必须包含"日期"、"学科"和"知识点名称"列。找到的列: ${columns.join(', ')}`);
+        }
+
+        const standardizedData = jsonData.map(row => {
+            const newRow = { '日期': row[dateColumn], '学科': row[subjectColumn], '知识点名称': row[titleColumn] };
+            for (const col of columns) {
+                if (col === dateColumn || col === subjectColumn || col === titleColumn) continue;
+                if (col.includes('内容') || col.toLowerCase().includes('content')) newRow['内容'] = row[col];
+                else if (col.includes('标签') || col.toLowerCase().includes('tag')) newRow['标签'] = row[col];
+                else if (col.includes('掌握') || col.toLowerCase().includes('master')) newRow['掌握状态'] = row[col];
+                else newRow[col] = row[col];
+            }
+            return newRow;
+        });
+
+        importData = standardizedData;
+        showImportPreview(standardizedData);
+        if (importStatus) importStatus.style.display = 'none';
+    } catch (error) {
+        console.error('处理Excel数据错误:', error);
+        if (importStatus) importStatus.style.display = 'none';
+        if (importError) {
+            importError.textContent = '解析Excel文件失败: ' + error.message;
+            importError.classList.add('show');
+        }
+    }
+}
+
+function showImportPreview(data) {
+    const importPreview = document.getElementById('import-preview');
+    const previewTable = document.getElementById('preview-table');
+    const importSummary = document.getElementById('import-summary');
+    
+    if (!importPreview || !previewTable || !importSummary) return;
+
+    let tableHTML = `
+        <thead>
+            <tr>
+                <th>日期</th>
+                <th>学科</th>
+                <th>知识点名称</th>
+                <th>内容</th>
+                <th>标签</th>
+                <th>掌握状态</th>
+            </tr>
+        </thead>
+        <tbody>
+    `;
+    const previewRows = data.slice(0, 10);
+    previewRows.forEach(row => {
+        tableHTML += `
+            <tr>
+                <td>${row['日期'] || ''}</td>
+                <td>${row['学科'] || ''}</td>
+                <td>${row['知识点名称'] || ''}</td>
+                <td>${row['内容'] || ''}</td>
+                <td>${row['标签'] || ''}</td>
+                <td>${row['掌握状态'] || ''}</td>
+            </tr>
+        `;
+    });
+    tableHTML += '</tbody>';
+    previewTable.innerHTML = tableHTML;
+
+    const importOption = document.querySelector('input[name="import-option"]:checked').value;
+    let summaryText = `共 ${data.length} 条数据`;
+    if (importOption === 'merge') {
+        let newKnowledgeCount = 0;
+        data.forEach(row => {
+            const date = row['日期'];
+            const title = row['知识点名称'];
+            if (date && title) {
+                if (!knowledgeData[date] || !knowledgeData[date].some(k => k.title === title)) {
+                    newKnowledgeCount++;
+                }
+            }
+        });
+        summaryText += `，其中 ${newKnowledgeCount} 条为新数据`;
+    }
+    importSummary.textContent = summaryText;
+    importPreview.style.display = 'block';
+}
+
+async function handleImport() {
+    if (!importData) return;
+    const importOption = document.querySelector('input[name="import-option"]:checked').value;
+    const importPreview = document.getElementById('import-preview');
+    const importStatus = document.getElementById('import-status');
+    const importError = document.getElementById('import-error');
+
+    try {
+        if (importPreview) importPreview.style.display = 'none';
+        if (importStatus) importStatus.style.display = 'block';
+
+        if (importOption === 'replace') {
+            knowledgeData = {};
+        }
+
+        let importCount = 0;
+        let skipCount = 0;
+
+        for (const row of importData) {
+            const date = row['日期'];
+            const title = row['知识点名称'];
+            const subject = row['学科'];
+
+            if (!date || !title || !subject) continue;
+
+            if (!knowledgeData[date]) {
+                knowledgeData[date] = [];
+            }
+
+            if (importOption === 'merge') {
+                const exists = knowledgeData[date].some(k => k.title === title);
+                if (exists) {
+                    skipCount++;
+                    continue;
+                }
+            }
+
+            let tags = [];
+            if (row['标签']) {
+                tags = row['标签'].split(/[,，;；\s]+/).filter(tag => tag.trim() !== '');
+            }
+
+            const newKnowledge = {
+                id: Date.now() + Math.random(),
+                subject: subject,
+                title: title,
+                content: row['内容'] || '',
+                tags: tags,
+                mastered: row['掌握状态'] === '已掌握',
+                createdAt: new Date().toISOString()
+            };
+
+            knowledgeData[date].push(newKnowledge);
+            importCount++;
+        }
+
+        await saveUserKnowledge();
+
+        let message = `成功导入 ${importCount} 条数据`;
+        if (skipCount > 0) {
+            message += `，跳过 ${skipCount} 条重复数据`;
+        }
+        showSyncStatus(message, 3000);
+
+        renderKnowledge();
+
+        setTimeout(() => { hideImportModal(); }, 1000);
+
+    } catch (error) {
+        console.error('导入数据错误:', error);
+        if (importError) {
+            importError.textContent = '导入失败: ' + error.message;
+            importError.classList.add('show');
+        }
+    } finally {
+        if (importStatus) importStatus.style.display = 'none';
+    }
+}
+
+// 创建并下载Excel文件
+function createAndDownloadExcel(data, fileName) {
+    if (typeof XLSX === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        script.onload = function() { createExcelFile(data, fileName); };
+        script.onerror = function() { alert('无法加载Excel导出库，请检查网络连接'); };
+        document.head.appendChild(script);
+    } else {
+        createExcelFile(data, fileName);
+    }
+}
+
+// 创建Excel文件
+function createExcelFile(data, fileName) {
+    try {
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "考研知识点");
+        XLSX.writeFile(wb, fileName);
+    } catch (error) {
+        console.error('创建Excel文件失败:', error);
+        alert('创建Excel文件失败: ' + error.message);
+    }
+}
+
+console.log('考研知识点记录本应用初始化完成');
+</script>
+</body>
+</html>
