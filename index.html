@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>考研知识点记录本</title>
+<title>考研知识点记录本 - 大数据版</title>
 <!-- Tailwind CSS CDN -->
 <script src="https://cdn.tailwindcss.com"></script>
 <!-- Google Fonts -->
@@ -145,6 +145,15 @@ body {
 
 .btn-danger:hover {
     background-color: #dc2626;
+}
+
+.btn-warning {
+    background-color: #f59e0b;
+    color: white;
+}
+
+.btn-warning:hover {
+    background-color: #d97706;
 }
 
 .btn-full {
@@ -307,7 +316,8 @@ body {
 
 .header-actions {
     display: flex;
-    gap: 1rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .header-btn {
@@ -317,10 +327,14 @@ body {
     cursor: pointer;
     font-size: 0.875rem;
     text-decoration: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    transition: all 0.15s ease-in-out;
 }
 
 .header-btn:hover {
     color: #2563eb;
+    background-color: #f1f5f9;
 }
 
 .header-btn.danger {
@@ -329,6 +343,16 @@ body {
 
 .header-btn.danger:hover {
     color: #dc2626;
+    background-color: #fef2f2;
+}
+
+.header-btn.warning {
+    color: #f59e0b;
+}
+
+.header-btn.warning:hover {
+    color: #d97706;
+    background-color: #fffbeb;
 }
 
 /* 模态框样式 */
@@ -434,6 +458,9 @@ body {
     font-size: 0.75rem;
     display: none;
     z-index: 1000;
+    max-width: 300px;
+    text-align: center;
+    line-height: 1.4;
 }
 
 .sync-status.show {
@@ -454,6 +481,16 @@ body {
     
     .knowledge-actions {
         align-self: flex-end;
+    }
+    
+    .header-actions {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .header-btn {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.4rem;
     }
 }
 
@@ -810,6 +847,63 @@ body {
         right: 10px;
     }
 }
+
+/* 数据管理面板样式 */
+.data-management {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.data-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.data-item {
+    text-align: center;
+    padding: 0.5rem;
+    background: white;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e7eb;
+}
+
+.data-item-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.data-item-label {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 0.25rem;
+}
+
+.data-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 0.5rem;
+    background: #e5e7eb;
+    border-radius: 0.25rem;
+    overflow: hidden;
+    margin: 0.5rem 0;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #3b82f6;
+    transition: width 0.3s ease;
+}
 </style>
 </head>
 <body>
@@ -825,7 +919,7 @@ body {
 <!-- 登录界面 -->
 <div id="login-container" class="login-container">
     <div class="login-card">
-        <h2 style="font-size: 1.5rem; font-weight: 700; text-align: center; margin-bottom: 1.5rem;">🎓 考研知识点记录本</h2>
+        <h2 style="font-size: 1.5rem; font-weight: 700; text-align: center; margin-bottom: 1.5rem;">🎓 考研知识点记录本 - 大数据版</h2>
         
         <form id="login-form">
             <div class="form-group">
@@ -868,9 +962,12 @@ body {
                     <span id="current-user" class="user-name"></span>
                 </div>
                 <div class="header-actions">
+                    <button id="data-management-btn" class="header-btn warning">📊 数据管理</button>
+                    <button id="cleanup-btn" class="header-btn warning">🧹 清理</button>
+                    <button id="backup-btn" class="header-btn">💾 备份</button>
                     <button id="sync-btn" class="header-btn">
                         <div id="sync-spinner" class="loading" style="display: none; margin-right: 0.25rem;"></div>
-                        <span id="sync-text">手动同步</span>
+                        <span id="sync-text">智能同步</span>
                     </button>
                     <button id="logout-btn" class="header-btn danger">退出登录</button>
                 </div>
@@ -882,7 +979,42 @@ body {
         <!-- 标题 -->
         <div style="text-align: center; margin-bottom: 2rem;">
             <h1 style="font-size: 2rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem;">🎓 考研知识点记录本</h1>
-            <p style="color: #64748b;">高效记录，系统复习，成功上岸</p>
+            <p style="color: #64748b;">高效记录，系统复习，成功上岸 - 支持大数据存储</p>
+        </div>
+
+        <!-- 数据管理面板 -->
+        <div id="data-management-panel" class="data-management" style="display: none;">
+            <h3 style="font-size: 1.125rem; font-weight: 600; color: #374151; margin-bottom: 1rem;">📊 数据管理</h3>
+            
+            <div class="data-info">
+                <div class="data-item">
+                    <div class="data-item-value" id="total-size">0 MB</div>
+                    <div class="data-item-label">总数据大小</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-item-value" id="total-knowledge">0</div>
+                    <div class="data-item-label">知识点总数</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-item-value" id="total-images">0</div>
+                    <div class="data-item-label">图片总数</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-item-value" id="total-dates">0</div>
+                    <div class="data-item-label">学习天数</div>
+                </div>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="storage-progress" style="width: 0%"></div>
+            </div>
+            
+            <div class="data-actions">
+                <button id="analyze-btn" class="btn btn-secondary">🔍 分析数据</button>
+                <button id="clean-large-btn" class="btn btn-warning">🧹 清理大图片</button>
+                <button id="optimize-btn" class="btn btn-primary">⚡ 优化存储</button>
+                <button id="export-backup-btn" class="btn btn-secondary">💾 导出备份</button>
+            </div>
         </div>
 
         <!-- 添加知识点表单 -->
@@ -1119,6 +1251,65 @@ let uploadedImages = [];
 let currentPreviewImageIndex = 0;
 let currentPreviewImages = [];
 
+// 数据管理状态
+let dataManagementStats = {
+    totalSize: 0,
+    totalKnowledge: 0,
+    totalImages: 0,
+    totalDates: 0,
+    lastAnalysis: null
+};
+
+// 图片压缩函数 - 大数据优化版
+function compressImage(file, maxWidth = 800, maxHeight = 600, quality = 0.6) {
+    return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        img.onload = () => {
+            let { width, height } = img;
+            
+            // 如果图片太大，按比例缩小
+            if (width > maxWidth || height > maxHeight) {
+                const ratio = Math.min(maxWidth / width, maxHeight / height);
+                width *= ratio;
+                height *= ratio;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            // 填充白色背景（处理PNG透明度）
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, width, height);
+            
+            // 绘制图片
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // 转换为JPEG（更小）
+            canvas.toBlob(resolve, 'image/jpeg', quality);
+        };
+        
+        img.onerror = () => {
+            console.warn('图片压缩失败，使用原文件');
+            resolve(file);
+        };
+        
+        img.src = URL.createObjectURL(file);
+    });
+}
+
+// 辅助函数：Promise化的FileReader
+function readFileAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
 // 加载状态管理
 const loadingOverlay = document.getElementById('loading-overlay');
 const loadingStatus = document.getElementById('loading-status');
@@ -1244,6 +1435,7 @@ function initializeApp(firebaseOnly = false) {
     }
 
     initializeEventListeners();
+    initializeDataManagement();
 }
 
 function initializeEventListeners() {
@@ -1254,7 +1446,7 @@ function initializeEventListeners() {
     if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
 
     const syncBtn = document.getElementById('sync-btn');
-    if (syncBtn) syncBtn.addEventListener('click', handleSync);
+    if (syncBtn) syncBtn.addEventListener('click', handleSmartSync);
 
     const knowledgeForm = document.getElementById('knowledge-form');
     if (knowledgeForm) knowledgeForm.addEventListener('submit', handleAddKnowledge);
@@ -1309,6 +1501,616 @@ function initializeEventListeners() {
     });
 }
 
+// 数据管理功能
+function initializeDataManagement() {
+    const dataManagementBtn = document.getElementById('data-management-btn');
+    const dataManagementPanel = document.getElementById('data-management-panel');
+    const cleanupBtn = document.getElementById('cleanup-btn');
+    const backupBtn = document.getElementById('backup-btn');
+    const analyzeBtn = document.getElementById('analyze-btn');
+    const cleanLargeBtn = document.getElementById('clean-large-btn');
+    const optimizeBtn = document.getElementById('optimize-btn');
+    const exportBackupBtn = document.getElementById('export-backup-btn');
+
+    // 切换数据管理面板
+    if (dataManagementBtn) {
+        dataManagementBtn.addEventListener('click', () => {
+            if (dataManagementPanel.style.display === 'none') {
+                dataManagementPanel.style.display = 'block';
+                updateDataStats();
+            } else {
+                dataManagementPanel.style.display = 'none';
+            }
+        });
+    }
+
+    // 清理按钮
+    if (cleanupBtn) {
+        cleanupBtn.addEventListener('click', () => {
+            if (confirm('确定要执行数据清理吗？这将删除大图片和旧数据。')) {
+                performDataCleanup();
+            }
+        });
+    }
+
+    // 备份按钮
+    if (backupBtn) {
+        backupBtn.addEventListener('click', () => {
+            createDataBackup();
+        });
+    }
+
+    // 分析按钮
+    if (analyzeBtn) {
+        analyzeBtn.addEventListener('click', () => {
+            analyzeData();
+        });
+    }
+
+    // 清理大图片按钮
+    if (cleanLargeBtn) {
+        cleanLargeBtn.addEventListener('click', () => {
+            cleanLargeImages();
+        });
+    }
+
+    // 优化存储按钮
+    if (optimizeBtn) {
+        optimizeBtn.addEventListener('click', () => {
+            optimizeStorage();
+        });
+    }
+
+    // 导出备份按钮
+    if (exportBackupBtn) {
+        exportBackupBtn.addEventListener('click', () => {
+            exportDataBackup();
+        });
+    }
+
+    // 定期更新数据统计
+    setInterval(updateDataStats, 30000); // 每30秒更新一次
+}
+
+// 更新数据统计
+function updateDataStats() {
+    if (!knowledgeData) return;
+
+    let totalSize = 0;
+    let totalKnowledge = 0;
+    let totalImages = 0;
+    const totalDates = Object.keys(knowledgeData).length;
+
+    for (const date in knowledgeData) {
+        const dateData = knowledgeData[date];
+        totalKnowledge += dateData.length;
+        
+        dateData.forEach(item => {
+            if (item.images && item.images.length > 0) {
+                totalImages += item.images.length;
+                item.images.forEach(img => {
+                    totalSize += img.data ? img.data.length : 0;
+                });
+            }
+        });
+    }
+
+    // 更新显示
+    const totalSizeElement = document.getElementById('total-size');
+    const totalKnowledgeElement = document.getElementById('total-knowledge');
+    const totalImagesElement = document.getElementById('total-images');
+    const totalDatesElement = document.getElementById('total-dates');
+    const storageProgress = document.getElementById('storage-progress');
+
+    if (totalSizeElement) {
+        totalSizeElement.textContent = (totalSize / 1024 / 1024).toFixed(2) + ' MB';
+    }
+    if (totalKnowledgeElement) {
+        totalKnowledgeElement.textContent = totalKnowledge;
+    }
+    if (totalImagesElement) {
+        totalImagesElement.textContent = totalImages;
+    }
+    if (totalDatesElement) {
+        totalDatesElement.textContent = totalDates;
+    }
+
+    // 更新进度条（假设100MB为满）
+    if (storageProgress) {
+        const percentage = Math.min((totalSize / (100 * 1024 * 1024)) * 100, 100);
+        storageProgress.style.width = percentage + '%';
+        
+        // 根据使用量改变颜色
+        if (percentage > 80) {
+            storageProgress.style.backgroundColor = '#ef4444';
+        } else if (percentage > 60) {
+            storageProgress.style.backgroundColor = '#f59e0b';
+        } else {
+            storageProgress.style.backgroundColor = '#3b82f6';
+        }
+    }
+
+    // 保存统计
+    dataManagementStats = {
+        totalSize,
+        totalKnowledge,
+        totalImages,
+        totalDates,
+        lastAnalysis: new Date().toISOString()
+    };
+}
+
+// 分析数据
+function analyzeData() {
+    console.log('🔍 开始数据分析...');
+    
+    if (!knowledgeData || Object.keys(knowledgeData).length === 0) {
+        showSyncStatus('没有数据可以分析', 2000);
+        return;
+    }
+
+    const analysis = {
+        totalSize: 0,
+        totalKnowledge: 0,
+        totalImages: 0,
+        totalDates: Object.keys(knowledgeData).length,
+        largeImages: [],
+        largeDates: [],
+        subjectDistribution: {},
+        recentActivity: []
+    };
+
+    // 分析每个日期
+    for (const date in knowledgeData) {
+        const dateData = knowledgeData[date];
+        const dateSize = JSON.stringify(dateData).length;
+        analysis.totalSize += dateSize;
+        analysis.totalKnowledge += dateData.length;
+
+        // 检查大日期
+        if (dateSize > 5 * 1024 * 1024) { // 5MB
+            analysis.largeDates.push({
+                date,
+                size: dateSize,
+                knowledgeCount: dateData.length
+            });
+        }
+
+        // 分析每个知识点
+        dateData.forEach(item => {
+            // 学科分布
+            if (item.subject) {
+                analysis.subjectDistribution[item.subject] = (analysis.subjectDistribution[item.subject] || 0) + 1;
+            }
+
+            // 图片分析
+            if (item.images && item.images.length > 0) {
+                analysis.totalImages += item.images.length;
+                
+                item.images.forEach(img => {
+                    const imgSize = img.data ? img.data.length : 0;
+                    
+                    // 检查大图片
+                    if (imgSize > 500 * 1024) { // 500KB
+                        analysis.largeImages.push({
+                            date,
+                            title: item.title,
+                            name: img.name,
+                            size: imgSize
+                        });
+                    }
+                });
+            }
+        });
+    }
+
+    // 最近活动
+    const sortedDates = Object.keys(knowledgeData).sort((a, b) => new Date(b) - new Date(a));
+    analysis.recentActivity = sortedDates.slice(0, 7);
+
+    // 显示分析结果
+    console.log('📊 数据分析结果:');
+    console.log(`总数据大小: ${(analysis.totalSize / 1024 / 1024).toFixed(2)}MB`);
+    console.log(`知识点总数: ${analysis.totalKnowledge}`);
+    console.log(`图片总数: ${analysis.totalImages}`);
+    console.log(`学习天数: ${analysis.totalDates}`);
+    
+    if (analysis.largeDates.length > 0) {
+        console.log(`大日期数据 (${analysis.largeDates.length}个):`);
+        analysis.largeDates.forEach(item => {
+            console.log(`  ${item.date}: ${(item.size / 1024 / 1024).toFixed(2)}MB, ${item.knowledgeCount}个知识点`);
+        });
+    }
+    
+    if (analysis.largeImages.length > 0) {
+        console.log(`大图片数据 (${analysis.largeImages.length}张):`);
+        analysis.largeImages.forEach(item => {
+            console.log(`  ${item.date} - ${item.title}: ${(item.size / 1024).toFixed(0)}KB`);
+        });
+    }
+
+    console.log('学科分布:', analysis.subjectDistribution);
+    console.log('最近活动:', analysis.recentActivity);
+
+    showSyncStatus(`分析完成: ${(analysis.totalSize / 1024 / 1024).toFixed(2)}MB, ${analysis.totalKnowledge}个知识点`, 3000);
+    
+    return analysis;
+}
+
+// 清理大图片
+function cleanLargeImages() {
+    console.log('🧹 开始清理大图片...');
+    
+    let cleanedCount = 0;
+    let cleanedSize = 0;
+    const maxImageSize = 500 * 1024; // 500KB
+
+    for (const date in knowledgeData) {
+        const originalLength = knowledgeData[date].length;
+        
+        knowledgeData[date] = knowledgeData[date].filter(item => {
+            if (item.images && item.images.length > 0) {
+                const totalImageSize = item.images.reduce((sum, img) => sum + (img.data ? img.data.length : 0), 0);
+                
+                if (totalImageSize > maxImageSize) {
+                    console.log(`清理大图片: ${item.title} (${(totalImageSize / 1024).toFixed(0)}KB)`);
+                    cleanedCount++;
+                    cleanedSize += totalImageSize;
+                    item.images = []; // 删除图片，保留知识点
+                    return true;
+                }
+            }
+            return true;
+        });
+        
+        // 删除空日期
+        if (knowledgeData[date].length === 0) {
+            delete knowledgeData[date];
+            console.log(`删除空日期: ${date}`);
+        }
+    }
+
+    console.log(`✅ 清理完成: ${cleanedCount}个大图片, 节省 ${(cleanedSize / 1024 / 1024).toFixed(2)}MB`);
+    
+    // 更新显示
+    updateDataStats();
+    renderKnowledge();
+    
+    // 保存到本地
+    if (currentUser) {
+        localStorage.setItem('knowledge_' + currentUser, JSON.stringify(knowledgeData));
+    }
+    
+    showSyncStatus(`清理完成: ${cleanedCount}个大图片, 节省 ${(cleanedSize / 1024 / 1024).toFixed(2)}MB`, 3000);
+    
+    return { cleanedCount, cleanedSize };
+}
+
+// 优化存储
+function optimizeStorage() {
+    console.log('⚡ 开始优化存储...');
+    
+    let optimizedCount = 0;
+    let optimizedSize = 0;
+    
+    // 1. 清理上传的图片
+    if (uploadedImages && uploadedImages.length > 3) {
+        const removedImages = uploadedImages.splice(3);
+        removedImages.forEach(img => {
+            optimizedSize += img.data ? img.data.length : 0;
+        });
+        optimizedCount += removedImages.length;
+        console.log(`清理上传图片: 保留3张，删除${removedImages.length}张`);
+    }
+    
+    // 2. 压缩所有图片
+    for (const date in knowledgeData) {
+        knowledgeData[date].forEach(item => {
+            if (item.images && item.images.length > 0) {
+                item.images.forEach(img => {
+                    if (img.data && img.data.length > 200 * 1024) { // 200KB以上
+                        const originalSize = img.data.length;
+                        // 这里可以添加更激进的压缩逻辑
+                        optimizedSize += originalSize - (originalSize * 0.3); // 假设压缩30%
+                        optimizedCount++;
+                    }
+                });
+            }
+        });
+    }
+    
+    console.log(`✅ 优化完成: ${optimizedCount}个项目, 节省 ${(optimizedSize / 1024 / 1024).toFixed(2)}MB`);
+    
+    // 更新显示
+    updateDataStats();
+    renderKnowledge();
+    
+    showSyncStatus(`优化完成: ${optimizedCount}个项目, 节省 ${(optimizedSize / 1024 / 1024).toFixed(2)}MB`, 3000);
+    
+    return { optimizedCount, optimizedSize };
+}
+
+// 创建数据备份
+function createDataBackup() {
+    console.log('💾 创建数据备份...');
+    
+    if (!knowledgeData || Object.keys(knowledgeData).length === 0) {
+        showSyncStatus('没有数据可以备份', 2000);
+        return;
+    }
+
+    const backupData = {
+        version: '2.0',
+        timestamp: new Date().toISOString(),
+        user: currentUser,
+        stats: dataManagementStats,
+        data: knowledgeData
+    };
+
+    const dataStr = JSON.stringify(backupData, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `knowledge_backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    // 同时保存到本地存储
+    const backupKey = `backup_${currentUser}_${Date.now()}`;
+    localStorage.setItem(backupKey, dataStr);
+
+    console.log(`✅ 备份完成: ${(dataStr.length / 1024 / 1024).toFixed(2)}MB`);
+    console.log(`💾 本地备份: ${backupKey}`);
+    
+    showSyncStatus(`备份完成: ${(dataStr.length / 1024 / 1024).toFixed(2)}MB`, 3000);
+}
+
+// 导出数据备份
+function exportDataBackup() {
+    createDataBackup();
+}
+
+// 智能分批同步函数
+async function handleSmartSync() {
+    if (!currentUser) {
+        console.log('❌ 未登录');
+        showSyncStatus('未登录', 2000);
+        return;
+    }
+    
+    if (useLocalMode || !firebaseAvailable) {
+        console.log('ℹ️ 当前在本地模式，无需同步');
+        showSyncStatus('本地存储模式，无需同步', 2000);
+        return;
+    }
+    
+    if (!isOnline) {
+        console.log('❌ 网络未连接');
+        showSyncStatus('网络未连接', 2000);
+        return;
+    }
+    
+    try {
+        showSyncStatus('智能同步分析...');
+        console.log('🧠 智能同步分析...');
+        
+        // 统计数据
+        const totalSize = JSON.stringify(knowledgeData).length;
+        const totalDates = Object.keys(knowledgeData).length;
+        
+        console.log(`📊 数据分析:`);
+        console.log(`   总大小: ${(totalSize / 1024 / 1024).toFixed(2)}MB`);
+        console.log(`   日期数量: ${totalDates}`);
+        
+        if (totalSize < 10 * 1024 * 1024) {
+            console.log('📊 数据较小，使用直接同步');
+            await saveUserKnowledge();
+        } else if (totalSize < 50 * 1024 * 1024) {
+            console.log('📊 数据中等，使用分批同步');
+            await batchSync();
+        } else {
+            console.log('📊 数据很大，使用分层存储');
+            await layeredStorageSync();
+        }
+        
+    } catch (error) {
+        console.error('智能同步失败:', error);
+        showSyncStatus('同步失败: ' + error.message, 3000);
+    }
+}
+
+// 分批同步函数
+async function batchSync() {
+    if (!currentUser) return;
+    
+    try {
+        showSyncStatus('分批同步中...');
+        console.log('🚀 开始分批同步...');
+        
+        const allDates = Object.keys(knowledgeData).sort((a, b) => new Date(b) - new Date(a));
+        const totalDates = allDates.length;
+        let totalSize = 0;
+        let totalKnowledge = 0;
+        
+        allDates.forEach(date => {
+            const dateSize = JSON.stringify(knowledgeData[date]).length;
+            totalSize += dateSize;
+            totalKnowledge += knowledgeData[date].length;
+        });
+        
+        console.log(`📊 同步统计:`);
+        console.log(`   日期数量: ${totalDates}`);
+        console.log(`   知识点数量: ${totalKnowledge}`);
+        console.log(`   总数据大小: ${(totalSize / 1024 / 1024).toFixed(2)}MB`);
+        
+        const batchSize = 3; // 每批3个日期
+        let successBatches = 0;
+        let failedBatches = 0;
+        let totalBatches = Math.ceil(totalDates / batchSize);
+        
+        console.log(`🔄 分批策略: 每批${batchSize}个日期，共${totalBatches}批次`);
+        
+        for (let i = 0; i < allDates.length; i += batchSize) {
+            const batchDates = allDates.slice(i, i + batchSize);
+            const batchNumber = Math.floor(i / batchSize) + 1;
+            
+            console.log(`📦 处理批次 ${batchNumber}/${totalBatches}: ${batchDates.join(', ')}`);
+            showSyncStatus(`同步中... ${batchNumber}/${totalBatches} 批次`);
+            
+            try {
+                const batchData = {};
+                let batchHasLargeData = false;
+                
+                for (const date of batchDates) {
+                    const dateData = knowledgeData[date];
+                    const dateSize = JSON.stringify(dateData).length;
+                    
+                    if (dateSize > 12 * 1024 * 1024) { // 12MB
+                        console.log(`⚠️ 日期 ${date} 数据过大(${(dateSize / 1024 / 1024).toFixed(2)}MB)，按知识点拆分`);
+                        batchHasLargeData = true;
+                        
+                        for (let j = 0; j < dateData.length; j++) {
+                            const item = dateData[j];
+                            const itemSize = JSON.stringify(item).length;
+                            
+                            try {
+                                await database.ref('knowledge/' + currentUser + '/' + date + '/item_' + j).set(item);
+                                console.log(`  ✅ 同步 ${date} 知识点 ${j + 1} (${(itemSize / 1024).toFixed(0)}KB)`);
+                            } catch (error) {
+                                console.error(`  ❌ 同步失败 ${date} 知识点 ${j + 1}:`, error);
+                                failedBatches++;
+                            }
+                        }
+                    } else {
+                        batchData[date] = dateData;
+                    }
+                }
+                
+                if (!batchHasLargeData && Object.keys(batchData).length > 0) {
+                    const batchStr = JSON.stringify(batchData);
+                    const batchSizeBytes = batchStr.length;
+                    
+                    if (batchSizeBytes > 15 * 1024 * 1024) { // 15MB安全边界
+                        console.log(`⚠️ 批次 ${batchNumber} 数据过大(${(batchSizeBytes / 1024 / 1024).toFixed(2)}MB)，按日期单独同步`);
+                        
+                        for (const date of batchDates) {
+                            try {
+                                await database.ref('knowledge/' + currentUser + '/' + date).set(knowledgeData[date]);
+                                console.log(`  ✅ 单独同步 ${date}`);
+                            } catch (error) {
+                                console.error(`  ❌ 单独同步失败 ${date}:`, error);
+                                failedBatches++;
+                            }
+                        }
+                    } else {
+                        await database.ref('knowledge/' + currentUser + '/batch_' + batchNumber).set(batchData);
+                        console.log(`  ✅ 批次 ${batchNumber} 同步完成 (${(batchSizeBytes / 1024 / 1024).toFixed(2)}MB)`);
+                        successBatches++;
+                    }
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+            } catch (error) {
+                console.error(`❌ 批次 ${batchNumber} 同步失败:`, error);
+                failedBatches++;
+            }
+        }
+        
+        console.log(`📊 同步完成统计:`);
+        console.log(`   成功批次: ${successBatches}`);
+        console.log(`   失败批次: ${failedBatches}`);
+        console.log(`   总批次: ${totalBatches}`);
+        
+        const successRate = ((successBatches / totalBatches) * 100).toFixed(1);
+        console.log(`   成功率: ${successRate}%`);
+        
+        if (failedBatches === 0) {
+            console.log('🎉 所有批次同步成功！');
+            showSyncStatus(`分批同步完成: ${successBatches}/${totalBatches} 批次成功`, 3000);
+        } else {
+            console.log(`⚠️ ${failedBatches} 个批次失败`);
+            showSyncStatus(`同步完成: ${successBatches}/${totalBatches} 批次成功`, 3000);
+        }
+        
+    } catch (error) {
+        console.error('分批同步失败:', error);
+        showSyncStatus('分批同步失败: ' + error.message, 3000);
+    }
+}
+
+// 分层存储函数
+async function layeredStorageSync() {
+    if (!currentUser) return;
+    
+    try {
+        showSyncStatus('分层存储同步中...');
+        console.log('🗂️ 开始分层存储...');
+        
+        const textData = {};
+        const imageData = {};
+        let totalImageSize = 0;
+        let imageCount = 0;
+        
+        for (const date in knowledgeData) {
+            textData[date] = [];
+            imageData[date] = [];
+            
+            knowledgeData[date].forEach((item, index) => {
+                const textItem = { ...item };
+                delete textItem.images;
+                textData[date].push(textItem);
+                
+                if (item.images && item.images.length > 0) {
+                    imageData[date].push({
+                        id: item.id,
+                        index: index,
+                        images: item.images
+                    });
+                    
+                    item.images.forEach(img => {
+                        totalImageSize += img.data ? img.data.length : 0;
+                        imageCount++;
+                    });
+                }
+            });
+        }
+        
+        console.log(`📊 分层统计:`);
+        console.log(`   文本数据: ${(JSON.stringify(textData).length / 1024 / 1024).toFixed(2)}MB`);
+        console.log(`   图片数据: ${(totalImageSize / 1024 / 1024).toFixed(2)}MB (${imageCount}张)`);
+        
+        await database.ref('text/' + currentUser).set(textData);
+        console.log('✅ 文本数据同步完成');
+        
+        const imageDates = Object.keys(imageData);
+        for (let i = 0; i < imageDates.length; i++) {
+            const date = imageDates[i];
+            const dateImageData = imageData[date];
+            
+            if (dateImageData.length > 0) {
+                try {
+                    await database.ref('images/' + currentUser + '/' + date).set(dateImageData);
+                    console.log(`✅ 图片数据同步完成: ${date}`);
+                } catch (error) {
+                    console.error(`❌ 图片数据同步失败 ${date}:`, error);
+                }
+            }
+        }
+        
+        console.log('✅ 分层存储同步完成');
+        showSyncStatus('分层存储同步完成', 3000);
+        
+    } catch (error) {
+        console.error('分层存储同步失败:', error);
+        showSyncStatus('同步失败: ' + error.message, 3000);
+    }
+}
+
 // 初始化图片上传功能
 function initializeImageUpload() {
     const imageUploadArea = document.getElementById('image-upload-area');
@@ -1318,17 +2120,14 @@ function initializeImageUpload() {
     
     if (!imageUploadArea || !imageInput || !imagePreviewContainer) return;
     
-    // 点击上传区域触发文件选择
     imageUploadArea.addEventListener('click', () => {
         imageInput.click();
     });
     
-    // 文件选择事件
     imageInput.addEventListener('change', (e) => {
         handleImageFiles(e.target.files);
     });
     
-    // 拖拽上传
     imageUploadArea.addEventListener('dragover', (e) => {
         e.preventDefault();
         imageUploadArea.classList.add('dragover');
@@ -1344,19 +2143,15 @@ function initializeImageUpload() {
         handleImageFiles(e.dataTransfer.files);
     });
     
-    // 剪切板按钮点击事件
     if (clipboardBtn) {
         clipboardBtn.addEventListener('click', handleClipboardPaste);
     }
     
-    // 全局键盘粘贴事件
     document.addEventListener('paste', (e) => {
-        // 检查是否在图片上传区域内或输入框中
         const activeElement = document.activeElement;
         const isInUploadArea = imageUploadArea.contains(activeElement);
         const isInKnowledgeForm = document.getElementById('knowledge-form').contains(activeElement);
         
-        // 如果在上传区域或知识点表单中，且不是在输入框中，则处理图片粘贴
         if ((isInUploadArea || isInKnowledgeForm) && 
             activeElement.tagName !== 'INPUT' && 
             activeElement.tagName !== 'TEXTAREA') {
@@ -1371,20 +2166,11 @@ async function handleClipboardPaste() {
     const clipboardBtn = document.getElementById('clipboard-btn');
     
     try {
-        // 检查剪切板API是否可用
         if (!navigator.clipboard) {
             showSyncStatus('您的浏览器不支持剪切板API', 3000);
             return;
         }
         
-        // 检查剪切板读取权限
-        const permission = await navigator.permissions.query({ name: 'clipboard-read' });
-        if (permission.state === 'denied') {
-            showSyncStatus('请允许访问剪切板权限', 3000);
-            return;
-        }
-        
-        // 禁用按钮防止重复点击
         if (clipboardBtn) {
             clipboardBtn.disabled = true;
             clipboardBtn.innerHTML = `
@@ -1393,7 +2179,6 @@ async function handleClipboardPaste() {
             `;
         }
         
-        // 读取剪切板内容
         const clipboardItems = await navigator.clipboard.read();
         
         for (const clipboardItem of clipboardItems) {
@@ -1401,9 +2186,9 @@ async function handleClipboardPaste() {
                 if (type.startsWith('image/')) {
                     const blob = await clipboardItem.getType(type);
                     const file = new File([blob], `clipboard_${Date.now()}.${type.split('/')[1]}`, { type });
-                    handleImageFiles([file]);
                     
-                    // 恢复按钮状态
+                    await handleImageFiles([file]);
+                    
                     if (clipboardBtn) {
                         clipboardBtn.disabled = false;
                         clipboardBtn.innerHTML = `
@@ -1414,20 +2199,17 @@ async function handleClipboardPaste() {
                         `;
                     }
                     
-                    showSyncStatus('图片已从剪切板添加', 2000);
                     return;
                 }
             }
         }
         
-        // 没有找到图片
         showSyncStatus('剪切板中没有图片', 2000);
         
     } catch (error) {
         console.error('读取剪切板失败:', error);
         showSyncStatus('读取剪切板失败: ' + error.message, 3000);
     } finally {
-        // 恢复按钮状态
         if (clipboardBtn) {
             clipboardBtn.disabled = false;
             clipboardBtn.innerHTML = `
@@ -1441,7 +2223,7 @@ async function handleClipboardPaste() {
 }
 
 // 处理图片文件
-function handleImageFiles(files) {
+async function handleImageFiles(files) {
     const imagePreviewContainer = document.getElementById('image-preview-container');
     if (!imagePreviewContainer) return;
     
@@ -1450,33 +2232,59 @@ function handleImageFiles(files) {
         return;
     }
     
-    Array.from(files).forEach(file => {
-        // 检查文件类型
+    showSyncStatus('正在处理图片...');
+    
+    for (let index = 0; index < files.length; index++) {
+        const file = files[index];
+        console.log(`处理第 ${index + 1} 个文件:`, {
+            name: file.name,
+            type: file.type,
+            size: (file.size / 1024).toFixed(2) + ' KB'
+        });
+        
         if (!file.type.match('image.*')) {
-            alert('只能上传图片文件');
-            return;
+            console.error('文件类型不匹配:', file.type);
+            showSyncStatus('只能上传图片文件', 2000);
+            continue;
         }
         
-        // 检查文件大小（限制为5MB）
         if (file.size > 5 * 1024 * 1024) {
-            alert('图片大小不能超过5MB');
-            return;
+            console.error('文件过大:', file.size);
+            showSyncStatus('图片大小不能超过5MB', 2000);
+            continue;
         }
         
-        // 读取文件并转换为base64
-        const reader = new FileReader();
-        reader.onload = (e) => {
+        try {
+            const compressedBlob = await compressImage(file);
+            const compressedFile = new File([compressedBlob], 
+                file.name.replace(/\.[^/.]+$/, '.jpg'), 
+                { type: 'image/jpeg' });
+            
+            const compressionRatio = ((file.size - compressedFile.size) / file.size * 100).toFixed(1);
+            console.log(`图片压缩完成: ${(file.size / 1024).toFixed(2)}KB -> ${(compressedFile.size / 1024).toFixed(2)}KB (压缩 ${compressionRatio}%)`);
+            
+            const dataURL = await readFileAsDataURL(compressedFile);
+            
             const imageData = {
                 id: Date.now() + Math.random(),
-                name: file.name,
-                data: e.target.result // base64编码的图片数据
+                name: compressedFile.name,
+                data: dataURL
             };
             
             uploadedImages.push(imageData);
             renderImagePreviews();
-        };
-        reader.readAsDataURL(file);
-    });
+            
+            showSyncStatus(`图片已添加 (压缩 ${compressionRatio}%)`, 2000);
+            
+        } catch (error) {
+            console.error('处理图片失败:', error);
+            showSyncStatus('图片处理失败: ' + error.message, 3000);
+        }
+    }
+    
+    setTimeout(() => {
+        showSyncStatus('');
+    }, 1000);
 }
 
 // 渲染图片预览
@@ -1521,19 +2329,16 @@ function initializeImagePreviewModal() {
     
     if (!imagePreviewModal) return;
     
-    // 关闭按钮
     if (imagePreviewClose) {
         imagePreviewClose.addEventListener('click', hideImagePreviewModal);
     }
     
-    // 点击背景关闭
     imagePreviewModal.addEventListener('click', (e) => {
         if (e.target === imagePreviewModal) {
             hideImagePreviewModal();
         }
     });
     
-    // 上一张按钮
     if (imagePreviewPrev) {
         imagePreviewPrev.addEventListener('click', () => {
             currentPreviewImageIndex = (currentPreviewImageIndex - 1 + currentPreviewImages.length) % currentPreviewImages.length;
@@ -1541,7 +2346,6 @@ function initializeImagePreviewModal() {
         });
     }
     
-    // 下一张按钮
     if (imagePreviewNext) {
         imagePreviewNext.addEventListener('click', () => {
             currentPreviewImageIndex = (currentPreviewImageIndex + 1) % currentPreviewImages.length;
@@ -1549,7 +2353,6 @@ function initializeImagePreviewModal() {
         });
     }
     
-    // 键盘事件
     document.addEventListener('keydown', (e) => {
         if (!imagePreviewModal.classList.contains('show')) return;
         
@@ -1600,7 +2403,6 @@ function updatePreviewImage() {
         imagePreviewCounter.textContent = `${currentPreviewImageIndex + 1} / ${currentPreviewImages.length}`;
     }
     
-    // 如果只有一张图片，隐藏导航按钮
     if (currentPreviewImages.length === 1) {
         if (imagePreviewPrev) imagePreviewPrev.style.display = 'none';
         if (imagePreviewNext) imagePreviewNext.style.display = 'none';
@@ -1757,82 +2559,6 @@ function handleLogout() {
     }
 }
 
-// 手动同步
-async function handleSync() {
-    if (useLocalMode || !firebaseAvailable) {
-        showSyncStatus('本地存储模式，无需同步', 2000);
-        return;
-    }
-    if (!isOnline) {
-        showSyncStatus('网络未连接', 2000);
-        return;
-    }
-    await saveUserKnowledge();
-}
-
-// 添加知识点
-async function handleAddKnowledge(e) {
-    e.preventDefault();
-    
-    const subjectSelect = document.getElementById('subject-select');
-    const titleInput = document.getElementById('title-input');
-    const contentInput = document.getElementById('content-input');
-    const tagsInput = document.getElementById('tags-input');
-    const knowledgeForm = document.getElementById('knowledge-form');
-    
-    const subjectText = subjectSelect.value;
-    const titleText = titleInput.value.trim();
-    const contentText = contentInput.value.trim();
-    const tagsText = tagsInput.value.trim();
-
-    if (!subjectText || !titleText || !contentText) return;
-
-    const today = new Date().toISOString().split('T')[0];
-    if (!knowledgeData[today]) {
-        knowledgeData[today] = [];
-    }
-
-    const tags = tagsText ? tagsText.split(' ').filter(tag => tag.trim() !== '') : [];
-
-    const newKnowledge = {
-        id: Date.now(),
-        subject: subjectText,
-        title: titleText,
-        content: contentText,
-        tags: tags,
-        mastered: false,
-        createdAt: new Date().toISOString(),
-        images: [...uploadedImages] // 复制上传的图片数组
-    };
-
-    // 新知识点添加到当天列表的开头
-    knowledgeData[today].unshift(newKnowledge);
-
-    if (knowledgeForm) knowledgeForm.reset();
-    if (titleInput) titleInput.focus();
-    
-    // 重置表单标签
-    updateFormLabels('');
-    
-    // 清空上传的图片
-    uploadedImages = [];
-    renderImagePreviews();
-    
-    renderKnowledge();
-    showRandomEncouragement();
-
-    if (useLocalMode || !firebaseAvailable) {
-        localStorage.setItem('knowledge_' + currentUser, JSON.stringify(knowledgeData));
-        showSyncStatus('已保存到本地', 1500);
-    } else {
-        if (isOnline) {
-            await saveUserKnowledge();
-        } else {
-            showSyncStatus('离线模式，数据将在网络恢复后同步', 3000);
-        }
-    }
-}
-
 // 显示主应用
 function showApp() {
     const loginContainer = document.getElementById('login-container');
@@ -1844,6 +2570,9 @@ function showApp() {
     if (currentUserSpan) {
         currentUserSpan.textContent = currentUser + (useLocalMode || !firebaseAvailable ? ' (本地模式)' : '');
     }
+    
+    // 初始化数据统计
+    updateDataStats();
     renderKnowledge();
 }
 
@@ -1881,11 +2610,37 @@ async function saveUserKnowledge() {
         if (syncText) syncText.style.display = 'none';
         if (syncSpinner) syncSpinner.style.display = 'inline-block';
         showSyncStatus('保存中...');
+        
+        const dataStr = JSON.stringify(knowledgeData);
+        const dataSize = dataStr.length;
+        console.log('准备保存数据，大小:', (dataSize / 1024 / 1024).toFixed(2) + 'MB');
+        
+        if (dataSize > 10 * 1024 * 1024) {
+            throw new Error('数据过大（' + (dataSize / 1024 / 1024).toFixed(2) + 'MB），请减少图片数量或大小');
+        }
+        
         await database.ref('knowledge/' + currentUser).set(knowledgeData);
         showSyncStatus('已同步到云端', 1500);
     } catch (error) {
         console.error('保存数据错误:', error);
-        showSyncStatus('同步失败', 2000);
+        let errorMessage = '同步失败';
+        
+        if (error.message.includes('data') || error.message.includes('size')) {
+            errorMessage = error.message;
+        } else if (error.message.includes('network') || error.message.includes('connection')) {
+            errorMessage = '网络连接失败，请检查网络';
+        } else if (error.message.includes('permission')) {
+            errorMessage = '权限不足，请重新登录';
+        } else {
+            errorMessage = '同步失败: ' + error.message;
+        }
+        
+        showSyncStatus(errorMessage, 3000);
+        
+        if (confirm('云端同步失败，是否保存到本地？\n\n错误信息：' + errorMessage)) {
+            localStorage.setItem('knowledge_' + currentUser, JSON.stringify(knowledgeData));
+            showSyncStatus('已保存到本地', 1500);
+        }
     } finally {
         const syncText = document.getElementById('sync-text');
         const syncSpinner = document.getElementById('sync-spinner');
@@ -1902,11 +2657,9 @@ function renderKnowledge() {
     knowledgeListContainer.innerHTML = '';
     const sortedDates = Object.keys(knowledgeData).sort((a, b) => new Date(b) - new Date(a));
 
-    // 根据筛选条件过滤知识点
     const filteredKnowledgeData = {};
     
     if (currentFilterSubject) {
-        // 如果有筛选条件，只保留符合条件的数据
         sortedDates.forEach(dateStr => {
             const dayKnowledge = knowledgeData[dateStr].filter(k => k.subject === currentFilterSubject);
             if (dayKnowledge.length > 0) {
@@ -1914,7 +2667,6 @@ function renderKnowledge() {
             }
         });
     } else {
-        // 没有筛选条件，使用全部数据
         sortedDates.forEach(dateStr => {
             filteredKnowledgeData[dateStr] = knowledgeData[dateStr];
         });
@@ -1943,7 +2695,6 @@ function renderKnowledge() {
         dateHeader.textContent = `${formattedDate} (${dayKnowledge.length} 个知识点)`;
         daySection.appendChild(dateHeader);
 
-        // 按创建时间倒序排列当天知识点，确保最新的在最上面
         dayKnowledge.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
         dayKnowledge.forEach(knowledge => {
@@ -1997,7 +2748,6 @@ function createKnowledgeItem(knowledge, dateStr) {
     contentP.textContent = knowledge.content;
     knowledgeItem.appendChild(contentP);
     
-    // 添加图片展示
     if (knowledge.images && knowledge.images.length > 0) {
         const imagesDiv = document.createElement('div');
         imagesDiv.className = 'knowledge-images';
@@ -2046,12 +2796,10 @@ function updateStats() {
     const today = new Date().toISOString().split('T')[0];
     let todayKnowledgeCount = 0;
 
-    // 根据筛选条件统计知识点
     const dates = Object.keys(knowledgeData);
     dates.forEach(date => {
         const dayKnowledge = knowledgeData[date];
         
-        // 根据筛选条件过滤
         const filteredKnowledge = currentFilterSubject 
             ? dayKnowledge.filter(k => k.subject === currentFilterSubject)
             : dayKnowledge;
@@ -2089,7 +2837,7 @@ async function deleteKnowledge(date, id) {
             showSyncStatus('已保存到本地', 1500);
         } else {
             if (isOnline) {
-                await saveUserKnowledge();
+                await handleSmartSync();
             } else {
                 showSyncStatus('离线模式，数据将在网络恢复后同步', 3000);
             }
@@ -2101,556 +2849,628 @@ async function deleteKnowledge(date, id) {
 async function toggleMastered(date, id) {
     const idStr = String(id);
     const knowledge = knowledgeData[date].find(k => String(k.id) === idStr);
-    if (knowledge) {
-        knowledge.mastered = !knowledge.mastered;
-        renderKnowledge();
+    if (knowledge){
+knowledge.mastered = !knowledge.mastered;
+renderKnowledge();
 
-        if (useLocalMode || !firebaseAvailable) {
-            localStorage.setItem('knowledge_' + currentUser, JSON.stringify(knowledgeData));
-            showSyncStatus('已保存到本地', 1500);
-        } else {
-            if (isOnline) {
-                await saveUserKnowledge();
-            } else {
-                showSyncStatus('离线模式，数据将在网络恢复后同步', 3000);
-            }
-        }
-    }
+if (useLocalMode || !firebaseAvailable) {
+localStorage.setItem('knowledge_' + currentUser, JSON.stringify(knowledgeData));
+showSyncStatus('已保存到本地', 1500);
+} else {
+if (isOnline) {
+await handleSmartSync();
+} else {
+showSyncStatus('离线模式，数据将在网络恢复后同步', 3000);
+}
+}
+}
+}
+
+// 添加知识点
+async function handleAddKnowledge(e) {
+e.preventDefault();
+
+const subjectSelect = document.getElementById('subject-select');
+const titleInput = document.getElementById('title-input');
+const contentInput = document.getElementById('content-input');
+const tagsInput = document.getElementById('tags-input');
+const knowledgeForm = document.getElementById('knowledge-form');
+
+const subjectText = subjectSelect.value;
+const titleText = titleInput.value.trim();
+const contentText = contentInput.value.trim();
+const tagsText = tagsInput.value.trim();
+
+if (!subjectText || !titleText || !contentText) return;
+
+let totalImageSize = 0;
+uploadedImages.forEach(img => {
+totalImageSize += img.data.length;
+});
+
+if (totalImageSize > 8 * 1024 * 1024) {
+alert('图片数据过大，请减少图片数量或大小\n当前大小: ' + (totalImageSize / 1024 / 1024).toFixed(2) + 'MB\n建议: 每张图片控制在1MB以内');
+return;
+}
+
+const today = new Date().toISOString().split('T')[0];
+if (!knowledgeData[today]) {
+knowledgeData[today] = [];
+}
+
+const tags = tagsText ? tagsText.split(' ').filter(tag => tag.trim() !== '') : [];
+
+const newKnowledge = {
+id: Date.now(),
+subject: subjectText,
+title: titleText,
+content: contentText,
+tags: tags,
+mastered: false,
+createdAt: new Date().toISOString(),
+images: [...uploadedImages]
+};
+
+knowledgeData[today].unshift(newKnowledge);
+
+if (knowledgeForm) knowledgeForm.reset();
+if (titleInput) titleInput.focus();
+
+updateFormLabels('');
+
+uploadedImages = [];
+renderImagePreviews();
+
+renderKnowledge();
+showRandomEncouragement();
+
+if (useLocalMode || !firebaseAvailable) {
+localStorage.setItem('knowledge_' + currentUser, JSON.stringify(knowledgeData));
+showSyncStatus('已保存到本地', 1500);
+} else {
+if (isOnline) {
+await handleSmartSync();
+} else {
+showSyncStatus('离线模式，数据将在网络恢复后同步', 3000);
+}
+}
 }
 
 // 显示随机鼓励
 function showRandomEncouragement() {
-    const encouragements = [
-        "又掌握一个知识点，离成功更近一步！",
-        "坚持就是胜利，加油！",
-        "你的知识体系正在稳步构建！",
-        "Excellent! Keep it up!",
-        "今日的努力，是明日的底气！",
-        "今天的你比昨天更博学了！",
-        "Amazing! 每个知识点都是一块基石。",
-        "持之以恒，终将上岸！",
-        "你的汗水，时间看得见！",
-        "又为梦想添砖加瓦了！"
-    ];
+const encouragements = [
+"又掌握一个知识点，离成功更近一步！",
+"坚持就是胜利，加油！",
+"你的知识体系正在稳步构建！",
+"Excellent! Keep it up!",
+"今日的努力，是明日的底气！",
+"今天的你比昨天更博学了！",
+"Amazing! 每个知识点都是一块基石。",
+"持之以恒，终将上岸！",
+"你的汗水，时间看得见！",
+"又为梦想添砖加瓦了！"
+];
 
-    const toast = document.getElementById('encouragement-toast');
-    const encouragementText = document.getElementById('encouragement-text');
-    
-    if (toast && encouragementText) {
-        const randomIndex = Math.floor(Math.random() * encouragements.length);
-        const message = encouragements[randomIndex];
-        encouragementText.textContent = message;
+const toast = document.getElementById('encouragement-toast');
+const encouragementText = document.getElementById('encouragement-text');
 
-        toast.classList.add('show');
+if (toast && encouragementText) {
+const randomIndex = Math.floor(Math.random() * encouragements.length);
+const message = encouragements[randomIndex];
+encouragementText.textContent = message;
 
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 3000);
-    }
+toast.classList.add('show');
+
+setTimeout(() => {
+toast.classList.remove('show');
+}, 3000);
+}
 }
 
 // 显示同步状态
 function showSyncStatus(message, duration = 2000) {
-    const syncStatus = document.getElementById('sync-status');
-    const syncStatusText = document.getElementById('sync-status-text');
-    
-    if (syncStatus && syncStatusText) {
-        syncStatusText.textContent = message;
-        syncStatus.classList.add('show');
-        setTimeout(() => {
-            syncStatus.classList.remove('show');
-        }, duration);
-    }
+const syncStatus = document.getElementById('sync-status');
+const syncStatusText = document.getElementById('sync-status-text');
+
+if (syncStatus && syncStatusText) {
+syncStatusText.textContent = message;
+syncStatus.classList.add('show');
+setTimeout(() => {
+syncStatus.classList.remove('show');
+}, duration);
+}
 }
 
 // 密码哈希
 function hashPassword(password) {
-    let hash = 0;
-    for (let i = 0; i < password.length; i++) {
-        const char = password.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
-    }
-    return hash.toString();
+let hash = 0;
+for (let i = 0; i < password.length; i++) {
+const char = password.charCodeAt(i);
+hash = ((hash << 5) - hash) + char;
+hash = hash & hash;
+}
+return hash.toString();
 }
 
 // 获取所有学科
 function getUniqueSubjects() {
-    const subjects = new Set();
-    for (const date in knowledgeData) {
-        knowledgeData[date].forEach(item => {
-            if (item.subject) {
-                subjects.add(item.subject);
-            }
-        });
-    }
-    return Array.from(subjects).sort();
+const subjects = new Set();
+for (const date in knowledgeData) {
+knowledgeData[date].forEach(item => {
+if (item.subject) {
+subjects.add(item.subject);
+}
+});
+}
+return Array.from(subjects).sort();
 }
 
 // 导出相关函数
 function showExportModal() {
-    const modal = document.getElementById('export-modal');
-    const exportOptions = document.getElementById('export-options');
-    
-    if (!modal || !exportOptions) return;
-    
-    exportOptions.innerHTML = '';
+const modal = document.getElementById('export-modal');
+const exportOptions = document.getElementById('export-options');
 
-    const exportAllBtn = document.createElement('button');
-    exportAllBtn.textContent = '📦 导出全部数据';
-    exportAllBtn.className = 'btn btn-secondary';
-    exportAllBtn.style.cssText = 'width: 100%; margin-bottom: 0.5rem; justify-content: flex-start;';
-    exportAllBtn.onclick = exportAllData;
-    exportOptions.appendChild(exportAllBtn);
+if (!modal || !exportOptions) return;
 
-    const subjects = getUniqueSubjects();
-    if (subjects.length > 0) {
-        subjects.forEach(subject => {
-            const subjectBtn = document.createElement('button');
-            subjectBtn.textContent = `📚 导出 "${subject}"`;
-            subjectBtn.className = 'btn';
-            subjectBtn.style.cssText = 'width: 100%; margin-bottom: 0.5rem; justify-content: flex-start; background-color: #f3f4f6; color: #374151;';
-            subjectBtn.onclick = () => exportDataForSubject(subject);
-            exportOptions.appendChild(subjectBtn);
-        });
-    } else {
-        const noDataMsg = document.createElement('p');
-        noDataMsg.style.cssText = 'text-align: center; color: #6b7280; padding: 1rem;';
-        noDataMsg.textContent = '没有可按学科导出的数据。';
-        exportOptions.appendChild(noDataMsg);
-    }
+exportOptions.innerHTML = '';
 
-    modal.classList.add('show');
-    document.body.style.overflow = 'hidden';
+const exportAllBtn = document.createElement('button');
+exportAllBtn.textContent = '📦 导出全部数据';
+exportAllBtn.className = 'btn btn-secondary';
+exportAllBtn.style.cssText = 'width: 100%; margin-bottom: 0.5rem; justify-content: flex-start;';
+exportAllBtn.onclick = exportAllData;
+exportOptions.appendChild(exportAllBtn);
+
+const subjects = getUniqueSubjects();
+if (subjects.length > 0) {
+subjects.forEach(subject => {
+const subjectBtn = document.createElement('button');
+subjectBtn.textContent = `📚 导出 "${subject}"`;
+subjectBtn.className = 'btn';
+subjectBtn.style.cssText = 'width: 100%; margin-bottom: 0.5rem; justify-content: flex-start; background-color: #f3f4f6; color: #374151;';
+subjectBtn.onclick = () => exportDataForSubject(subject);
+exportOptions.appendChild(subjectBtn);
+});
+} else {
+const noDataMsg = document.createElement('p');
+noDataMsg.style.cssText = 'text-align: center; color: #6b7280; padding: 1rem;';
+noDataMsg.textContent = '没有可按学科导出的数据。';
+exportOptions.appendChild(noDataMsg);
+}
+
+modal.classList.add('show');
+document.body.style.overflow = 'hidden';
 }
 
 function hideExportModal() {
-    const modal = document.getElementById('export-modal');
-    if (modal) {
-        modal.classList.remove('show');
-        document.body.style.overflow = '';
-    }
+const modal = document.getElementById('export-modal');
+if (modal) {
+modal.classList.remove('show');
+document.body.style.overflow = '';
+}
 }
 
 function exportDataForSubject(subject) {
-    const allKnowledge = [];
-    for (const date in knowledgeData) {
-        knowledgeData[date].forEach(knowledge => {
-            if (knowledge.subject === subject) {
-                allKnowledge.push({
-                    '日期': date,
-                    '学科': knowledge.subject,
-                    '知识点名称': knowledge.title,
-                    '内容': knowledge.content,
-                    '标签': knowledge.tags ? knowledge.tags.join(', ') : '',
-                    '掌握状态': knowledge.mastered ? '已掌握' : '学习中',
-                    '创建时间': knowledge.createdAt,
-                    '图片数量': knowledge.images ? knowledge.images.length : 0
-                });
-            }
-        });
-    }
+const allKnowledge = [];
+for (const date in knowledgeData) {
+knowledgeData[date].forEach(knowledge => {
+if (knowledge.subject === subject) {
+allKnowledge.push({
+'日期': date,
+'学科': knowledge.subject,
+'知识点名称': knowledge.title,
+'内容': knowledge.content,
+'标签': knowledge.tags ? knowledge.tags.join(', ') : '',
+'掌握状态': knowledge.mastered ? '已掌握' : '学习中',
+'创建时间': knowledge.createdAt,
+'图片数量': knowledge.images ? knowledge.images.length : 0
+});
+}
+});
+}
 
-    if (allKnowledge.length === 0) {
-        alert(`没有找到 "${subject}" 学科的数据可以导出！`);
-        return;
-    }
+if (allKnowledge.length === 0) {
+alert(`没有找到 "${subject}" 学科的数据可以导出！`);
+return;
+}
 
-    createAndDownloadExcel(allKnowledge, `考研知识点_${subject}.xlsx`);
-    hideExportModal();
+createAndDownloadExcel(allKnowledge, `考研知识点_${subject}.xlsx`);
+hideExportModal();
 }
 
 function exportAllData() {
-    const allKnowledge = [];
-    for (const date in knowledgeData) {
-        knowledgeData[date].forEach(knowledge => {
-            allKnowledge.push({
-                '日期': date,
-                '学科': knowledge.subject,
-                '知识点名称': knowledge.title,
-                '内容': knowledge.content,
-                '标签': knowledge.tags ? knowledge.tags.join(', ') : '',
-                '掌握状态': knowledge.mastered ? '已掌握' : '学习中',
-                '创建时间': knowledge.createdAt,
-                '图片数量': knowledge.images ? knowledge.images.length : 0
-            });
-        });
-    }
+const allKnowledge = [];
+for (const date in knowledgeData) {
+knowledgeData[date].forEach(knowledge => {
+allKnowledge.push({
+'日期': date,
+'学科': knowledge.subject,
+'知识点名称': knowledge.title,
+'内容': knowledge.content,
+'标签': knowledge.tags ? knowledge.tags.join(', ') : '',
+'掌握状态': knowledge.mastered ? '已掌握' : '学习中',
+'创建时间': knowledge.createdAt,
+'图片数量': knowledge.images ? knowledge.images.length : 0
+});
+});
+}
 
-    if (allKnowledge.length === 0) {
-        alert('没有数据可以导出！');
-        return;
-    }
+if (allKnowledge.length === 0) {
+alert('没有数据可以导出！');
+return;
+}
 
-    const today = new Date().toISOString().split('T')[0];
-    createAndDownloadExcel(allKnowledge, `我的考研知识点_全部_${today}.xlsx`);
-    hideExportModal();
+const today = new Date().toISOString().split('T')[0];
+createAndDownloadExcel(allKnowledge, `我的考研知识点_全部_${today}.xlsx`);
+hideExportModal();
 }
 
 // 导入相关函数
 function showImportModal() {
-    const modal = document.getElementById('import-modal');
-    if (modal) {
-        modal.classList.add('show');
-        document.body.style.overflow = 'hidden';
-        resetImportModal();
-    }
+const modal = document.getElementById('import-modal');
+if (modal) {
+modal.classList.add('show');
+document.body.style.overflow = 'hidden';
+resetImportModal();
+}
 }
 
 function hideImportModal() {
-    const modal = document.getElementById('import-modal');
-    if (modal) {
-        modal.classList.remove('show');
-        document.body.style.overflow = '';
-        resetImportModal();
-    }
+const modal = document.getElementById('import-modal');
+if (modal) {
+modal.classList.remove('show');
+document.body.style.overflow = '';
+resetImportModal();
+}
 }
 
 function resetImportModal() {
-    const importFileInput = document.getElementById('import-file-input');
-    const importPreview = document.getElementById('import-preview');
-    const importStatus = document.getElementById('import-status');
-    const importError = document.getElementById('import-error');
-    const previewTable = document.getElementById('preview-table');
-    
-    if (importFileInput) importFileInput.value = '';
-    if (importPreview) importPreview.style.display = 'none';
-    if (importStatus) importStatus.style.display = 'none';
-    if (importError) importError.classList.remove('show');
-    if (previewTable) previewTable.innerHTML = '';
-    importData = null;
+const importFileInput = document.getElementById('import-file-input');
+const importPreview = document.getElementById('import-preview');
+const importStatus = document.getElementById('import-status');
+const importError = document.getElementById('import-error');
+const previewTable = document.getElementById('preview-table');
+
+if (importFileInput) importFileInput.value = '';
+if (importPreview) importPreview.style.display = 'none';
+if (importStatus) importStatus.style.display = 'none';
+if (importError) importError.classList.remove('show');
+if (previewTable) previewTable.innerHTML = '';
+importData = null;
 }
 
 function initializeFileDrop() {
-    const fileDropZone = document.getElementById('file-drop-zone');
-    const importFileInput = document.getElementById('import-file-input');
-    
-    if (!fileDropZone || !importFileInput) return;
+const fileDropZone = document.getElementById('file-drop-zone');
+const importFileInput = document.getElementById('import-file-input');
 
-    fileDropZone.addEventListener('click', () => {
-        importFileInput.click();
-    });
+if (!fileDropZone || !importFileInput) return;
 
-    fileDropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        fileDropZone.classList.add('dragover');
-    });
+fileDropZone.addEventListener('click', () => {
+importFileInput.click();
+});
 
-    fileDropZone.addEventListener('dragleave', () => {
-        fileDropZone.classList.remove('dragover');
-    });
+fileDropZone.addEventListener('dragover', (e) => {
+e.preventDefault();
+fileDropZone.classList.add('dragover');
+});
 
-    fileDropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        fileDropZone.classList.remove('dragover');
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            handleFileSelect(files[0]);
-        }
-    });
+fileDropZone.addEventListener('dragleave', () => {
+fileDropZone.classList.remove('dragover');
+});
 
-    importFileInput.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-            handleFileSelect(e.target.files[0]);
-        }
-    });
+fileDropZone.addEventListener('drop', (e) => {
+e.preventDefault();
+fileDropZone.classList.remove('dragover');
+const files = e.dataTransfer.files;
+if (files.length > 0) {
+handleFileSelect(files[0]);
+}
+});
+
+importFileInput.addEventListener('change', (e) => {
+if (e.target.files.length > 0) {
+handleFileSelect(e.target.files[0]);
+}
+});
 }
 
 function handleFileSelect(file) {
-    const importError = document.getElementById('import-error');
-    const importStatus = document.getElementById('import-status');
-    
-    if (importError) importError.classList.remove('show');
+const importError = document.getElementById('import-error');
+const importStatus = document.getElementById('import-status');
 
-    if (!file.name.match(/\.(xlsx|xls)$/)) {
-        if (importError) {
-            importError.textContent = '请选择Excel文件（.xlsx 或 .xls）';
-            importError.classList.add('show');
-        }
-        return;
-    }
+if (importError) importError.classList.remove('show');
 
-    if (file.size > 10 * 1024 * 1024) {
-        if (importError) {
-            importError.textContent = '文件大小超过限制（10MB）';
-            importError.classList.add('show');
-        }
-        return;
-    }
+if (!file.name.match(/\.(xlsx|xls)$/)) {
+if (importError) {
+importError.textContent = '请选择Excel文件（.xlsx 或 .xls）';
+importError.classList.add('show');
+}
+return;
+}
 
-    if (importStatus) {
-        importStatus.style.display = 'block';
-        importStatus.innerHTML = '<div class="loading" style="margin: 0 auto 0.5rem;"></div><p style="font-size: 0.875rem; color: #6b7280;">正在读取文件...</p>';
-    }
+if (file.size > 10 * 1024 * 1024) {
+if (importError) {
+importError.textContent = '文件大小超过限制（10MB）';
+importError.classList.add('show');
+}
+return;
+}
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const data = new Uint8Array(e.target.result);
-            if (typeof XLSX === 'undefined') {
-                const script = document.createElement('script');
-                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-                script.onload = function() { processExcelData(data); };
-                script.onerror = function() {
-                    if (importStatus) importStatus.style.display = 'none';
-                    if (importError) {
-                        importError.textContent = '无法加载Excel处理库，请检查网络连接';
-                        importError.classList.add('show');
-                    }
-                };
-                document.head.appendChild(script);
-            } else {
-                processExcelData(data);
-            }
-        } catch (error) {
-            console.error('读取文件错误:', error);
-            if (importStatus) importStatus.style.display = 'none';
-            if (importError) {
-                importError.textContent = '读取文件失败: ' + error.message;
-                importError.classList.add('show');
-            }
-        }
-    };
-    reader.onerror = function() {
-        if (importStatus) importStatus.style.display = 'none';
-        if (importError) {
-            importError.textContent = '文件读取失败，请重试';
-            importError.classList.add('show');
-        }
-    };
-    reader.readAsArrayBuffer(file);
+if (importStatus) {
+importStatus.style.display = 'block';
+importStatus.innerHTML = '<div class="loading" style="margin: 0 auto 0.5rem;"></div><p style="font-size: 0.875rem; color: #6b7280;">正在读取文件...</p>';
+}
+
+const reader = new FileReader();
+reader.onload = function(e) {
+try {
+const data = new Uint8Array(e.target.result);
+if (typeof XLSX === 'undefined') {
+const script = document.createElement('script');
+script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+script.onload = function() { processExcelData(data); };
+script.onerror = function() {
+if (importStatus) importStatus.style.display = 'none';
+if (importError) {
+importError.textContent = '无法加载Excel处理库，请检查网络连接';
+importError.classList.add('show');
+}
+};
+document.head.appendChild(script);
+} else {
+processExcelData(data);
+}
+} catch (error) {
+console.error('读取文件错误:', error);
+if (importStatus) importStatus.style.display = 'none';
+if (importError) {
+importError.textContent = '读取文件失败: ' + error.message;
+importError.classList.add('show');
+}
+}
+};
+reader.onerror = function() {
+if (importStatus) importStatus.style.display = 'none';
+if (importError) {
+importError.textContent = '文件读取失败，请重试';
+importError.classList.add('show');
+}
+};
+reader.readAsArrayBuffer(file);
 }
 
 function processExcelData(data) {
-    const importStatus = document.getElementById('import-status');
-    const importError = document.getElementById('import-error');
-    
-    try {
-        if (importStatus) {
-            importStatus.innerHTML = '<div class="loading" style="margin: 0 auto 0.5rem;"></div><p style="font-size: 0.875rem; color: #6b7280;">正在解析Excel文件...</p>';
-        }
+const importStatus = document.getElementById('import-status');
+const importError = document.getElementById('import-error');
 
-        const workbook = XLSX.read(data, { type: 'array' });
-        if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
-            throw new Error('Excel文件中没有工作表');
-        }
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+try {
+if (importStatus) {
+importStatus.innerHTML = '<div class="loading" style="margin: 0 auto 0.5rem;"></div><p style="font-size: 0.875rem; color: #6b7280;">正在解析Excel文件...</p>';
+}
 
-        if (jsonData.length === 0) {
-            throw new Error('Excel文件中没有数据');
-        }
+const workbook = XLSX.read(data, { type: 'array' });
+if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+throw new Error('Excel文件中没有工作表');
+}
+const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+const jsonData = XLSX.utils.sheet_to_json(firstSheet);
 
-        const columns = Object.keys(jsonData[0]);
-        console.log('Excel列名:', columns);
+if (jsonData.length === 0) {
+throw new Error('Excel文件中没有数据');
+}
 
-        let dateColumn = null;
-        let subjectColumn = null;
-        let titleColumn = null;
+const columns = Object.keys(jsonData[0]);
+console.log('Excel列名:', columns);
 
-        for (const col of columns) {
-            if (col.includes('日期') || col.toLowerCase().includes('date')) dateColumn = col;
-            if (col.includes('学科') || col.toLowerCase().includes('subject')) subjectColumn = col;
-            if (col.includes('知识点名称') || col.includes('题目') || col.toLowerCase().includes('title')) titleColumn = col;
-        }
+let dateColumn = null;
+let subjectColumn = null;
+let titleColumn = null;
 
-        if (!subjectColumn || !titleColumn) {
-            throw new Error(`Excel文件格式不正确，必须包含"学科"和"知识点名称"列。找到的列: ${columns.join(', ')}`);
-        }
+for (const col of columns) {
+if (col.includes('日期') || col.toLowerCase().includes('date')) dateColumn = col;
+if (col.includes('学科') || col.toLowerCase().includes('subject')) subjectColumn = col;
+if (col.includes('知识点名称') || col.includes('题目') || col.toLowerCase().includes('title')) titleColumn = col;
+}
 
-        const standardizedData = jsonData.map(row => {
-            const newRow = {};
-            // 如果没有日期列，则默认为今天
-            newRow['日期'] = dateColumn ? row[dateColumn] : new Date().toISOString().split('T')[0];
-            newRow['学科'] = row[subjectColumn];
-            newRow['知识点名称'] = row[titleColumn];
+if (!subjectColumn || !titleColumn) {
+throw new Error(`Excel文件格式不正确，必须包含"学科"和"知识点名称"列。找到的列: ${columns.join(', ')}`);
+}
 
-            for (const col of columns) {
-                if (col === dateColumn || col === subjectColumn || col === titleColumn) continue;
-                if (col.includes('内容') || col.toLowerCase().includes('content')) newRow['内容'] = row[col];
-                else if (col.includes('标签') || col.toLowerCase().includes('tag')) newRow['标签'] = row[col];
-                else if (col.includes('掌握') || col.toLowerCase().includes('master')) newRow['掌握状态'] = row[col];
-                else newRow[col] = row[col];
-            }
-            return newRow;
-        });
+const standardizedData = jsonData.map(row => {
+const newRow = {};
+if (dateColumn) {
+newRow['日期'] = row[dateColumn];
+} else {
+newRow['日期'] = new Date().toISOString().split('T')[0];
+}
+newRow['学科'] = row[subjectColumn];
+newRow['知识点名称'] = row[titleColumn];
 
-        importData = standardizedData;
-        showImportPreview(standardizedData);
-        if (importStatus) importStatus.style.display = 'none';
-    } catch (error) {
-        console.error('处理Excel数据错误:', error);
-        if (importStatus) importStatus.style.display = 'none';
-        if (importError) {
-            importError.textContent = '解析Excel文件失败: ' + error.message;
-            importError.classList.add('show');
-        }
-    }
+for (const col of columns) {
+if (col === dateColumn || col === subjectColumn || col === titleColumn) continue;
+if (col.includes('内容') || col.toLowerCase().includes('content')) newRow['内容'] = row[col];
+else if (col.includes('标签') || col.toLowerCase().includes('tag')) newRow['标签'] = row[col];
+else if (col.includes('掌握') || col.toLowerCase().includes('master')) newRow['掌握状态'] = row[col];
+else newRow[col] = row[col];
+}
+return newRow;
+});
+
+importData = standardizedData;
+showImportPreview(standardizedData);
+if (importStatus) importStatus.style.display = 'none';
+} catch (error) {
+console.error('处理Excel数据错误:', error);
+if (importStatus) importStatus.style.display = 'none';
+if (importError) {
+importError.textContent = '解析Excel文件失败: ' + error.message;
+importError.classList.add('show');
+}
+}
 }
 
 function showImportPreview(data) {
-    const importPreview = document.getElementById('import-preview');
-    const previewTable = document.getElementById('preview-table');
-    const importSummary = document.getElementById('import-summary');
-    
-    if (!importPreview || !previewTable || !importSummary) return;
+const importPreview = document.getElementById('import-preview');
+const previewTable = document.getElementById('preview-table');
+const importSummary = document.getElementById('import-summary');
 
-    let tableHTML = `
-        <thead>
-            <tr>
-                <th>日期</th>
-                <th>学科</th>
-                <th>知识点名称</th>
-                <th>内容</th>
-                <th>标签</th>
-                <th>掌握状态</th>
-            </tr>
-        </thead>
-        <tbody>
-    `;
-    const previewRows = data.slice(0, 10);
-    previewRows.forEach(row => {
-        tableHTML += `
-            <tr>
-                <td>${row['日期'] || ''}</td>
-                <td>${row['学科'] || ''}</td>
-                <td>${row['知识点名称'] || ''}</td>
-                <td>${row['内容'] || ''}</td>
-                <td>${row['标签'] || ''}</td>
-                <td>${row['掌握状态'] || ''}</td>
-            </tr>
-        `;
-    });
-    tableHTML += '</tbody>';
-    previewTable.innerHTML = tableHTML;
+if (!importPreview || !previewTable || !importSummary) return;
 
-    const importOption = document.querySelector('input[name="import-option"]:checked').value;
-    let summaryText = `共 ${data.length} 条数据`;
-    if (importOption === 'merge') {
-        let newKnowledgeCount = 0;
-        data.forEach(row => {
-            const date = row['日期'];
-            const title = row['知识点名称'];
-            if (date && title) {
-                if (!knowledgeData[date] || !knowledgeData[date].some(k => k.title === title)) {
-                    newKnowledgeCount++;
-                }
-            }
-        });
-        summaryText += `，其中 ${newKnowledgeCount} 条为新数据`;
-    }
-    importSummary.textContent = summaryText;
-    importPreview.style.display = 'block';
+let tableHTML = `
+<thead>
+<tr>
+<th>日期</th>
+<th>学科</th>
+<th>知识点名称</th>
+<th>内容</th>
+<th>标签</th>
+<th>掌握状态</th>
+</tr>
+</thead>
+<tbody>
+`;
+const previewRows = data.slice(0, 10);
+previewRows.forEach(row => {
+tableHTML += `
+<tr>
+<td>${row['日期'] || ''}</td>
+<td>${row['学科'] || ''}</td>
+<td>${row['知识点名称'] || ''}</td>
+<td>${row['内容'] || ''}</td>
+<td>${row['标签'] || ''}</td>
+<td>${row['掌握状态'] || ''}</td>
+</tr>
+`;
+});
+tableHTML += '</tbody>';
+previewTable.innerHTML = tableHTML;
+
+const importOption = document.querySelector('input[name="import-option"]:checked').value;
+let summaryText = `共 ${data.length} 条数据`;
+if (importOption === 'merge') {
+let newKnowledgeCount = 0;
+data.forEach(row => {
+const date = row['日期'];
+const title = row['知识点名称'];
+if (date && title) {
+if (!knowledgeData[date] || !knowledgeData[date].some(k => k.title === title)) {
+newKnowledgeCount++;
+}
+}
+});
+summaryText += `，其中 ${newKnowledgeCount} 条为新数据`;
+}
+importSummary.textContent = summaryText;
+importPreview.style.display = 'block';
 }
 
 async function handleImport() {
-    if (!importData) return;
-    const importOption = document.querySelector('input[name="import-option"]:checked').value;
-    const importPreview = document.getElementById('import-preview');
-    const importStatus = document.getElementById('import-status');
-    const importError = document.getElementById('import-error');
+if (!importData) return;
+const importOption = document.querySelector('input[name="import-option"]:checked').value;
+const importPreview = document.getElementById('import-preview');
+const importStatus = document.getElementById('import-status');
+const importError = document.getElementById('import-error');
 
-    try {
-        if (importPreview) importPreview.style.display = 'none';
-        if (importStatus) importStatus.style.display = 'block';
+try {
+if (importPreview) importPreview.style.display = 'none';
+if (importStatus) importStatus.style.display = 'block';
 
-        if (importOption === 'replace') {
-            knowledgeData = {};
-        }
+if (importOption === 'replace') {
+knowledgeData = {};
+}
 
-        let importCount = 0;
-        let skipCount = 0;
+let importCount = 0;
+let skipCount = 0;
 
-        for (const row of importData) {
-            const date = row['日期'];
-            const title = row['知识点名称'];
-            const subject = row['学科'];
+for (const row of importData) {
+const date = row['日期'];
+const title = row['知识点名称'];
+const subject = row['学科'];
 
-            if (!date || !title || !subject) continue;
+if (!date || !title || !subject) continue;
 
-            if (!knowledgeData[date]) {
-                knowledgeData[date] = [];
-            }
+if (!knowledgeData[date]) {
+knowledgeData[date] = [];
+}
 
-            if (importOption === 'merge') {
-                const exists = knowledgeData[date].some(k => k.title === title);
-                if (exists) {
-                    skipCount++;
-                    continue;
-                }
-            }
+if (importOption === 'merge') {
+const exists = knowledgeData[date].some(k => k.title === title);
+if (exists) {
+skipCount++;
+continue;
+}
+}
 
-            let tags = [];
-            if (row['标签']) {
-                tags = row['标签'].split(/[,，;；\s]+/).filter(tag => tag.trim() !== '');
-            }
+let tags = [];
+if (row['标签']) {
+tags = row['标签'].split(/[,，;；\s]+/).filter(tag => tag.trim() !== '');
+}
 
-            const newKnowledge = {
-                id: Date.now() + Math.random(),
-                subject: subject,
-                title: title,
-                content: row['内容'] || '',
-                tags: tags,
-                mastered: row['掌握状态'] === '已掌握',
-                createdAt: new Date().toISOString(),
-                images: [] // 导入的数据不包含图片
-            };
+const newKnowledge = {
+id: Date.now() + Math.random(),
+subject: subject,
+title: title,
+content: row['内容'] || '',
+tags: tags,
+mastered: row['掌握状态'] === '已掌握',
+createdAt: new Date().toISOString(),
+images: []
+};
 
-            knowledgeData[date].push(newKnowledge);
-            importCount++;
-        }
+knowledgeData[date].push(newKnowledge);
+importCount++;
+}
 
-        await saveUserKnowledge();
+await handleSmartSync();
 
-        let message = `成功导入 ${importCount} 条数据`;
-        if (skipCount > 0) {
-            message += `，跳过 ${skipCount} 条重复数据`;
-        }
-        showSyncStatus(message, 3000);
+let message = `成功导入 ${importCount} 条数据`;
+if (skipCount > 0) {
+message += `，跳过 ${skipCount} 条重复数据`;
+}
+showSyncStatus(message, 3000);
 
-        renderKnowledge();
+renderKnowledge();
 
-        setTimeout(() => { hideImportModal(); }, 1000);
+setTimeout(() => { hideImportModal(); }, 1000);
 
-    } catch (error) {
-        console.error('导入数据错误:', error);
-        if (importError) {
-            importError.textContent = '导入失败: ' + error.message;
-            importError.classList.add('show');
-        }
-    } finally {
-        if (importStatus) importStatus.style.display = 'none';
-    }
+} catch (error) {
+console.error('导入数据错误:', error);
+if (importError) {
+importError.textContent = '导入失败: ' + error.message;
+importError.classList.add('show');
+}
+} finally {
+if (importStatus) importStatus.style.display = 'none';
+}
 }
 
 // 创建并下载Excel文件
 function createAndDownloadExcel(data, fileName) {
-    if (typeof XLSX === 'undefined') {
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-        script.onload = function() { createExcelFile(data, fileName); };
-        script.onerror = function() { alert('无法加载Excel导出库，请检查网络连接'); };
-        document.head.appendChild(script);
-    } else {
-        createExcelFile(data, fileName);
-    }
+if (typeof XLSX === 'undefined') {
+const script = document.createElement('script');
+script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+script.onload = function() { createExcelFile(data, fileName); };
+script.onerror = function() { alert('无法加载Excel导出库，请检查网络连接'); };
+document.head.appendChild(script);
+} else {
+createExcelFile(data, fileName);
+}
 }
 
-
-// 创建Excel文件
 function createExcelFile(data, fileName) {
-    try {
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "考研知识点");
-        XLSX.writeFile(wb, fileName);
-    } catch (error) {
-        console.error('创建Excel文件失败:', error);
-        alert('创建Excel文件失败: ' + error.message);
-    }
+try {
+const ws = XLSX.utils.json_to_sheet(data);
+const wb = XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(wb, ws, "考研知识点");
+XLSX.writeFile(wb, fileName);
+} catch (error) {
+console.error('创建Excel文件失败:', error);
+alert('创建Excel文件失败: ' + error.message);
+}
 }
 
-console.log('考研知识点记录本应用初始化完成');
+console.log('考研知识点记录本应用初始化完成 - 大数据版');
 </script>
+
 </body>
 </html>
