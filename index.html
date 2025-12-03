@@ -933,7 +933,7 @@ body {
             </div>
             
             <div class="form-group">
-                <label style="display: flex; align-items: center; font-size: 0.875rem; color: #6b7280;">
+                <label style="display: flex; align-items: center; font-size: 0.875rem; color: #64748b;">
                     <input type="checkbox" id="use-local" style="margin-right: 0.5rem;">
                     使用本地存储（离线模式）
                 </label>
@@ -944,7 +944,7 @@ body {
                 <div id="login-spinner" class="loading" style="display: none; margin-left: 0.5rem;"></div>
             </button>
             
-            <p style="text-align: center; font-size: 0.875rem; color: #6b7280; margin-top: 1rem;">
+            <p style="text-align: center; font-size: 0.875rem; color: #64748b; margin-top: 1rem;">
                 首次使用将自动创建账户
             </p>
         </form>
@@ -1062,7 +1062,7 @@ body {
                     
                     <div class="image-upload-area" id="image-upload-area">
                         <input type="file" id="image-input" accept="image/*" multiple style="display: none;">
-                        <div style="color: #6b7280;">
+                        <div style="color: #64748b;">
                             <svg style="width: 2rem; height: 2rem; margin: 0 auto 0.5rem; color: #9ca3af;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                             </svg>
@@ -1156,7 +1156,7 @@ body {
         
         <div class="file-drop" id="file-drop-zone">
             <input type="file" id="import-file-input" accept=".xlsx,.xls" style="display: none;">
-            <div style="color: #6b7280;">
+            <div style="color: #64748b;">
                 <svg style="width: 3rem; height: 3rem; margin: 0 auto 0.75rem; color: #9ca3af;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                 </svg>
@@ -1252,7 +1252,7 @@ body {
                 
                 <div class="image-upload-area" id="edit-image-upload-area">
                     <input type="file" id="edit-image-input" accept="image/*" multiple style="display: none;">
-                    <div style="color: #6b7280;">
+                    <div style="color: #64748b;">
                         <svg style="width: 2rem; height: 2rem; margin: 0 auto 0.5rem; color: #9ca3af;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                         </svg>
@@ -1336,56 +1336,6 @@ let dataManagementStats = {
     lastAnalysis: null
 };
 
-// 图片压缩函数 - 大数据优化版
-function compressImage(file, maxWidth = 800, maxHeight = 600, quality = 0.6) {
-    return new Promise((resolve) => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
-        
-        img.onload = () => {
-            let { width, height } = img;
-            
-            // 如果图片太大，按比例缩小
-            if (width > maxWidth || height > maxHeight) {
-                const ratio = Math.min(maxWidth / width, maxHeight / height);
-                width *= ratio;
-                height *= ratio;
-            }
-            
-            canvas.width = width;
-            canvas.height = height;
-            
-            // 填充白色背景（处理PNG透明度）
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, 0, width, height);
-            
-            // 绘制图片
-            ctx.drawImage(img, 0, 0, width, height);
-            
-            // 转换为JPEG（更小）
-            canvas.toBlob(resolve, 'image/jpeg', quality);
-        };
-        
-        img.onerror = () => {
-            console.warn('图片压缩失败，使用原文件');
-            resolve(file);
-        };
-        
-        img.src = URL.createObjectURL(file);
-    });
-}
-
-// 辅助函数：Promise化的FileReader
-function readFileAsDataURL(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
-
 // 加载状态管理
 const loadingOverlay = document.getElementById('loading-overlay');
 const loadingStatus = document.getElementById('loading-status');
@@ -1402,81 +1352,85 @@ function hideLoading() {
     }
 }
 
-// Firebase SDK 加载器
-class FirebaseLoader {
-    async loadFirebaseSDK() {
+// 简化的初始化函数
+function initializeApp() {
+    try {
+        console.log('开始初始化应用...');
+        
+        // 尝试加载 Firebase SDK
         showLoading('正在加载 Firebase SDK...');
-
-        try {
-            // 设置较短的超时时间，避免长时间等待
-            const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => reject(new Error('加载超时')), 5000);
-            });
-
-            await Promise.race([
-                this.loadScript('https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js'),
-                timeoutPromise
-            ]);
-
-            await this.loadScript('https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js');
-            await this.loadScript('https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js');
-
-            await this.delay(500);
-
-            if (typeof firebase !== 'undefined') {
-                showLoading('✅ Firebase SDK 加载成功！');
-                await this.delay(500);
-                return true;
-            } else {
-                throw new Error('Firebase 未正确加载');
+        
+        // 创建脚本标签加载 Firebase
+        const firebaseAppScript = document.createElement('script');
+        firebaseAppScript.src = 'https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js';
+        firebaseAppScript.onload = function() {
+            console.log('Firebase App SDK 加载成功');
+            
+            const firebaseDbScript = document.createElement('script');
+            firebaseDbScript.src = 'https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js';
+            firebaseDbScript.onload = function() {
+                console.log('Firebase Database SDK 加载成功');
+                
+                const firebaseAuthScript = document.createElement('script');
+                firebaseAuthScript.src = 'https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js';
+                firebaseAuthScript.onload = function() {
+                    console.log('Firebase Auth SDK 加载成功');
+                    
+                    // 所有 SDK 加载完成，初始化 Firebase
+                    try {
+                        firebase.initializeApp(firebaseConfig);
+                        database = firebase.database();
+                        firebaseAvailable = true;
+                        console.log('Firebase 初始化成功');
+                    } catch (error) {
+                        console.error('Firebase 初始化失败:', error);
+                        firebaseAvailable = false;
+                    }
+                    
+                    // 继续初始化应用
+                    continueInitialization();
+                };
+                firebaseAuthScript.onerror = function() {
+                    console.error('Firebase Auth SDK 加载失败');
+                    firebaseAvailable = false;
+                    continueInitialization();
+                };
+                document.head.appendChild(firebaseAuthScript);
+            };
+            firebaseDbScript.onerror = function() {
+                console.error('Firebase Database SDK 加载失败');
+                firebaseAvailable = false;
+                continueInitialization();
+            };
+            document.head.appendChild(firebaseDbScript);
+        };
+        firebaseAppScript.onerror = function() {
+            console.error('Firebase App SDK 加载失败');
+            firebaseAvailable = false;
+            continueInitialization();
+        };
+        document.head.appendChild(firebaseAppScript);
+        
+        // 设置超时，如果 5 秒内没有加载完成，继续初始化
+        setTimeout(() => {
+            if (!firebaseAvailable) {
+                console.log('Firebase SDK 加载超时，使用本地模式');
+                firebaseAvailable = false;
+                continueInitialization();
             }
-        } catch (error) {
-            console.error('Firebase 加载失败:', error);
-            showLoading('⚠️ Firebase 加载失败，将使用本地模式');
-            await this.delay(1000);
-            return false;
-        }
-    }
-
-    loadScript(src) {
-        return new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = src;
-            script.async = true;
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-        });
-    }
-
-    delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
+        }, 5000);
+        
+    } catch (error) {
+        console.error('初始化过程中出错:', error);
+        firebaseAvailable = false;
+        continueInitialization();
     }
 }
 
-const firebaseLoader = new FirebaseLoader();
-
-// 应用初始化函数
-async function initializeApp() {
+function continueInitialization() {
     try {
-        // 尝试加载 Firebase SDK
-        const firebaseLoaded = await firebaseLoader.loadFirebaseSDK();
+        showLoading('正在初始化界面...');
         
-        // 初始化 Firebase（如果可用）
-        if (firebaseLoaded && typeof firebase !== 'undefined') {
-            try {
-                firebase.initializeApp(firebaseConfig);
-                database = firebase.database();
-                firebaseAvailable = true;
-                console.log('Firebase 初始化成功');
-            } catch (error) {
-                console.error('Firebase 初始化失败:', error);
-                firebaseAvailable = false;
-            }
-        } else {
-            firebaseAvailable = false;
-        }
-
         // 设置 UI 状态
         const loginContainer = document.getElementById('login-container');
         const appContainer = document.getElementById('app-container');
@@ -1495,21 +1449,16 @@ async function initializeApp() {
         }
 
         // 初始化事件监听器
-        try {
-            initializeEventListeners();
-            initializeDataManagement();
-        } catch (error) {
-            console.error('初始化事件监听器失败:', error);
-        }
+        initializeEventListeners();
+        initializeDataManagement();
 
         // 隐藏加载界面
         hideLoading();
         console.log('应用初始化完成');
         
     } catch (error) {
-        console.error('应用初始化过程中出错:', error);
-        
-        // 即使出错也要隐藏加载界面，避免卡住
+        console.error('继续初始化过程中出错:', error);
+        // 即使出错也要隐藏加载界面
         hideLoading();
         
         // 显示错误信息
@@ -1517,28 +1466,21 @@ async function initializeApp() {
         if (loadingStatus) {
             loadingStatus.textContent = '初始化失败，请刷新页面重试';
         }
-        
-        // 5秒后自动隐藏错误信息
-        setTimeout(() => {
-            hideLoading();
-        }, 5000);
     }
 }
 
 // 页面加载完成后初始化应用
-window.addEventListener('DOMContentLoaded', async () => {
+window.addEventListener('DOMContentLoaded', function() {
     console.log('DOM 加载完成，开始初始化应用');
     
     // 设置初始化超时
     const initTimeout = setTimeout(() => {
         console.log('初始化超时，强制隐藏加载界面');
         hideLoading();
-        // 即使超时也尝试初始化应用
-        initializeApp();
     }, 10000);
     
     try {
-        await initializeApp();
+        initializeApp();
         clearTimeout(initTimeout);
     } catch (error) {
         console.error('初始化过程中出错:', error);
@@ -1698,9 +1640,12 @@ function initializeDataManagement() {
     setInterval(updateDataStats, 30000); // 每30秒更新一次
 }
 
-// 更新数据统计
+// 更新数据统计 - 修复版本
 function updateDataStats() {
-    if (!knowledgeData) return;
+    if (!knowledgeData || typeof knowledgeData !== 'object') {
+        console.warn('knowledgeData 不是有效对象，跳过统计更新');
+        return;
+    }
 
     let totalSize = 0;
     let totalKnowledge = 0;
@@ -1708,14 +1653,25 @@ function updateDataStats() {
     const totalDates = Object.keys(knowledgeData).length;
 
     for (const date in knowledgeData) {
+        if (!knowledgeData.hasOwnProperty(date)) continue;
+        
         const dateData = knowledgeData[date];
+        
+        // 检查 dateData 是否为数组
+        if (!Array.isArray(dateData)) {
+            console.warn(`日期 ${date} 的数据不是数组，跳过:`, dateData);
+            continue;
+        }
+        
         totalKnowledge += dateData.length;
         
         dateData.forEach(item => {
-            if (item.images && item.images.length > 0) {
+            if (item.images && Array.isArray(item.images) && item.images.length > 0) {
                 totalImages += item.images.length;
                 item.images.forEach(img => {
-                    totalSize += img.data ? img.data.length : 0;
+                    if (img && img.data) {
+                        totalSize += img.data.length;
+                    }
                 });
             }
         });
@@ -1766,6 +1722,56 @@ function updateDataStats() {
     };
 }
 
+// 图片压缩函数 - 大数据优化版
+function compressImage(file, maxWidth = 800, maxHeight = 600, quality = 0.6) {
+    return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        img.onload = () => {
+            let { width, height } = img;
+            
+            // 如果图片太大，按比例缩小
+            if (width > maxWidth || height > maxHeight) {
+                const ratio = Math.min(maxWidth / width, maxHeight / height);
+                width *= ratio;
+                height *= ratio;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            // 填充白色背景（处理PNG透明度）
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, width, height);
+            
+            // 绘制图片
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // 转换为JPEG（更小）
+            canvas.toBlob(resolve, 'image/jpeg', quality);
+        };
+        
+        img.onerror = () => {
+            console.warn('图片压缩失败，使用原文件');
+            resolve(file);
+        };
+        
+        img.src = URL.createObjectURL(file);
+    });
+}
+
+// 辅助函数：Promise化的FileReader
+function readFileAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
 // 分析数据
 function analyzeData() {
     console.log('🔍 开始数据分析...');
@@ -1788,7 +1794,16 @@ function analyzeData() {
 
     // 分析每个日期
     for (const date in knowledgeData) {
+        if (!knowledgeData.hasOwnProperty(date)) continue;
+        
         const dateData = knowledgeData[date];
+        
+        // 检查 dateData 是否为数组
+        if (!Array.isArray(dateData)) {
+            console.warn(`日期 ${date} 的数据不是数组，跳过分析:`, dateData);
+            continue;
+        }
+        
         const dateSize = JSON.stringify(dateData).length;
         analysis.totalSize += dateSize;
         analysis.totalKnowledge += dateData.length;
@@ -1810,20 +1825,22 @@ function analyzeData() {
             }
 
             // 图片分析
-            if (item.images && item.images.length > 0) {
+            if (item.images && Array.isArray(item.images) && item.images.length > 0) {
                 analysis.totalImages += item.images.length;
                 
                 item.images.forEach(img => {
-                    const imgSize = img.data ? img.data.length : 0;
-                    
-                    // 检查大图片
-                    if (imgSize > 500 * 1024) { // 500KB
-                        analysis.largeImages.push({
-                            date,
-                            title: item.title,
-                            name: img.name,
-                            size: imgSize
-                        });
+                    if (img && img.data) {
+                        const imgSize = img.data.length;
+                        
+                        // 检查大图片
+                        if (imgSize > 500 * 1024) { // 500KB
+                            analysis.largeImages.push({
+                                date,
+                                title: item.title,
+                                name: img.name,
+                                size: imgSize
+                            });
+                        }
                     }
                 });
             }
@@ -1872,11 +1889,21 @@ function cleanLargeImages() {
     const maxImageSize = 500 * 1024; // 500KB
 
     for (const date in knowledgeData) {
-        const originalLength = knowledgeData[date].length;
+        if (!knowledgeData.hasOwnProperty(date)) continue;
         
-        knowledgeData[date] = knowledgeData[date].filter(item => {
-            if (item.images && item.images.length > 0) {
-                const totalImageSize = item.images.reduce((sum, img) => sum + (img.data ? img.data.length : 0), 0);
+        const dateData = knowledgeData[date];
+        
+        // 检查 dateData 是否为数组
+        if (!Array.isArray(dateData)) {
+            console.warn(`日期 ${date} 的数据不是数组，跳过清理:`, dateData);
+            continue;
+        }
+        
+        const originalLength = dateData.length;
+        
+        knowledgeData[date] = dateData.filter(item => {
+            if (item.images && Array.isArray(item.images) && item.images.length > 0) {
+                const totalImageSize = item.images.reduce((sum, img) => sum + (img && img.data ? img.data.length : 0), 0);
                 
                 if (totalImageSize > maxImageSize) {
                     console.log(`清理大图片: ${item.title} (${(totalImageSize / 1024).toFixed(0)}KB)`);
@@ -1931,8 +1958,18 @@ function optimizeStorage() {
     
     // 2. 压缩所有图片
     for (const date in knowledgeData) {
-        knowledgeData[date].forEach(item => {
-            if (item.images && item.images.length > 0) {
+        if (!knowledgeData.hasOwnProperty(date)) continue;
+        
+        const dateData = knowledgeData[date];
+        
+        // 检查 dateData 是否为数组
+        if (!Array.isArray(dateData)) {
+            console.warn(`日期 ${date} 的数据不是数组，跳过优化:`, dateData);
+            continue;
+        }
+        
+        dateData.forEach(item => {
+            if (item.images && Array.isArray(item.images) && item.images.length > 0) {
                 item.images.forEach(img => {
                     if (img.data && img.data.length > 200 * 1024) { // 200KB以上
                         const originalSize = img.data.length;
@@ -2063,9 +2100,12 @@ async function batchSync() {
         let totalKnowledge = 0;
         
         allDates.forEach(date => {
-            const dateSize = JSON.stringify(knowledgeData[date]).length;
-            totalSize += dateSize;
-            totalKnowledge += knowledgeData[date].length;
+            const dateData = knowledgeData[date];
+            if (Array.isArray(dateData)) {
+                const dateSize = JSON.stringify(dateData).length;
+                totalSize += dateSize;
+                totalKnowledge += dateData.length;
+            }
         });
         
         console.log(`📊 同步统计:`);
@@ -2093,6 +2133,11 @@ async function batchSync() {
                 
                 for (const date of batchDates) {
                     const dateData = knowledgeData[date];
+                    if (!Array.isArray(dateData)) {
+                        console.warn(`日期 ${date} 的数据不是数组，跳过同步:`, dateData);
+                        continue;
+                    }
+                    
                     const dateSize = JSON.stringify(dateData).length;
                     
                     if (dateSize > 12 * 1024 * 1024) { // 12MB
@@ -2127,8 +2172,7 @@ async function batchSync() {
                             try {
                                 await database.ref('knowledge/' + currentUser + '/' + date).set(knowledgeData[date]);
                                 console.log(`  ✅ 单独同步 ${date}`);
-                            } catch (error) {
-                                console.error(`  ❌ 单独同步失败 ${date}:`, error);
+                            } catch (error) {                                console.error(`  ❌ 单独同步失败 ${date}:`, error);
                                 failedBatches++;
                             }
                         }
@@ -2183,15 +2227,25 @@ async function layeredStorageSync() {
         let imageCount = 0;
         
         for (const date in knowledgeData) {
+            if (!knowledgeData.hasOwnProperty(date)) continue;
+            
+            const dateData = knowledgeData[date];
+            
+            // 检查 dateData 是否为数组
+            if (!Array.isArray(dateData)) {
+                console.warn(`日期 ${date} 的数据不是数组，跳过分层存储:`, dateData);
+                continue;
+            }
+            
             textData[date] = [];
             imageData[date] = [];
             
-            knowledgeData[date].forEach((item, index) => {
+            dateData.forEach((item, index) => {
                 const textItem = { ...item };
                 delete textItem.images;
                 textData[date].push(textItem);
                 
-                if (item.images && item.images.length > 0) {
+                if (item.images && Array.isArray(item.images) && item.images.length > 0) {
                     imageData[date].push({
                         id: item.id,
                         index: index,
@@ -2199,8 +2253,10 @@ async function layeredStorageSync() {
                     });
                     
                     item.images.forEach(img => {
-                        totalImageSize += img.data ? img.data.length : 0;
-                        imageCount++;
+                        if (img && img.data) {
+                            totalImageSize += img.data.length;
+                            imageCount++;
+                        }
                     });
                 }
             });
@@ -2531,7 +2587,8 @@ async function handleEditImageFiles(files) {
     
     if (editingImages.length + files.length > 5) {
         alert('最多只能上传5张图片');
-        return;    }
+        return;    
+    }
     
     showSyncStatus('正在处理图片...');
     
@@ -2995,14 +3052,20 @@ function renderKnowledge() {
     
     if (currentFilterSubject) {
         sortedDates.forEach(dateStr => {
-            const dayKnowledge = knowledgeData[dateStr].filter(k => k.subject === currentFilterSubject);
-            if (dayKnowledge.length > 0) {
-                filteredKnowledgeData[dateStr] = dayKnowledge;
+            const dayKnowledge = knowledgeData[dateStr];
+            if (Array.isArray(dayKnowledge)) {
+                const filtered = dayKnowledge.filter(k => k.subject === currentFilterSubject);
+                if (filtered.length > 0) {
+                    filteredKnowledgeData[dateStr] = filtered;
+                }
             }
         });
     } else {
         sortedDates.forEach(dateStr => {
-            filteredKnowledgeData[dateStr] = knowledgeData[dateStr];
+            const dayKnowledge = knowledgeData[dateStr];
+            if (Array.isArray(dayKnowledge)) {
+                filteredKnowledgeData[dateStr] = dayKnowledge;
+            }
         });
     }
 
@@ -3140,6 +3203,7 @@ function updateStats() {
     const dates = Object.keys(knowledgeData);
     dates.forEach(date => {
         const dayKnowledge = knowledgeData[date];
+        if (!Array.isArray(dayKnowledge)) return;
         
         const filteredKnowledge = currentFilterSubject 
             ? dayKnowledge.filter(k => k.subject === currentFilterSubject)
@@ -3167,20 +3231,22 @@ function updateStats() {
 async function deleteKnowledge(date, id) {
     const idStr = String(id);
     if (confirm('确定要删除这个知识点吗？')) {
-        knowledgeData[date] = knowledgeData[date].filter(k => String(k.id) !== idStr);
-        if (knowledgeData[date].length === 0) {
-            delete knowledgeData[date];
-        }
-        renderKnowledge();
+        if (knowledgeData[date] && Array.isArray(knowledgeData[date])) {
+            knowledgeData[date] = knowledgeData[date].filter(k => String(k.id) !== idStr);
+            if (knowledgeData[date].length === 0) {
+                delete knowledgeData[date];
+            }
+            renderKnowledge();
 
-        if (useLocalMode || !firebaseAvailable) {
-            localStorage.setItem('knowledge_' + currentUser, JSON.stringify(knowledgeData));
-            showSyncStatus('已保存到本地', 1500);
-        } else {
-            if (isOnline) {
-                await handleSmartSync();
+            if (useLocalMode || !firebaseAvailable) {
+                localStorage.setItem('knowledge_' + currentUser, JSON.stringify(knowledgeData));
+                showSyncStatus('已保存到本地', 1500);
             } else {
-                showSyncStatus('离线模式，数据将在网络恢复后同步', 3000);
+                if (isOnline) {
+                    await handleSmartSync();
+                } else {
+                    showSyncStatus('离线模式，数据将在网络恢复后同步', 3000);
+                }
             }
         }
     }
@@ -3189,19 +3255,21 @@ async function deleteKnowledge(date, id) {
 // 切换掌握状态
 async function toggleMastered(date, id) {
     const idStr = String(id);
-    const knowledge = knowledgeData[date].find(k => String(k.id) === idStr);
-    if (knowledge){
-        knowledge.mastered = !knowledge.mastered;
-        renderKnowledge();
+    if (knowledgeData[date] && Array.isArray(knowledgeData[date])) {
+        const knowledge = knowledgeData[date].find(k => String(k.id) === idStr);
+        if (knowledge){
+            knowledge.mastered = !knowledge.mastered;
+            renderKnowledge();
 
-        if (useLocalMode || !firebaseAvailable) {
-            localStorage.setItem('knowledge_' + currentUser, JSON.stringify(knowledgeData));
-            showSyncStatus('已保存到本地', 1500);
-        } else {
-            if (isOnline) {
-                await handleSmartSync();
+            if (useLocalMode || !firebaseAvailable) {
+                localStorage.setItem('knowledge_' + currentUser, JSON.stringify(knowledgeData));
+                showSyncStatus('已保存到本地', 1500);
             } else {
-                showSyncStatus('离线模式，数据将在网络恢复后同步', 3000);
+                if (isOnline) {
+                    await handleSmartSync();
+                } else {
+                    showSyncStatus('离线模式，数据将在网络恢复后同步', 3000);
+                }
             }
         }
     }
@@ -3337,11 +3405,14 @@ function hashPassword(password) {
 function getUniqueSubjects() {
     const subjects = new Set();
     for (const date in knowledgeData) {
-        knowledgeData[date].forEach(item => {
-            if (item.subject) {
-                subjects.add(item.subject);
-            }
-        });
+        const dayKnowledge = knowledgeData[date];
+        if (Array.isArray(dayKnowledge)) {
+            dayKnowledge.forEach(item => {
+                if (item.subject) {
+                    subjects.add(item.subject);
+                }
+            });
+        }
     }
     return Array.from(subjects).sort();
 }
@@ -3374,7 +3445,7 @@ function showExportModal() {
         });
     } else {
         const noDataMsg = document.createElement('p');
-        noDataMsg.style.cssText = 'text-align: center; color: #6b7280; padding: 1rem;';
+        noDataMsg.style.cssText = 'text-align: center; color: #64748b; padding: 1rem;';
         noDataMsg.textContent = '没有可按学科导出的数据。';
         exportOptions.appendChild(noDataMsg);
     }
@@ -3394,20 +3465,23 @@ function hideExportModal() {
 function exportDataForSubject(subject) {
     const allKnowledge = [];
     for (const date in knowledgeData) {
-        knowledgeData[date].forEach(knowledge => {
-            if (knowledge.subject === subject) {
-                allKnowledge.push({
-                    '日期': date,
-                    '学科': knowledge.subject,
-                    '知识点名称': knowledge.title,
-                    '内容': knowledge.content,
-                    '标签': knowledge.tags ? knowledge.tags.join(', ') : '',
-                    '掌握状态': knowledge.mastered ? '已掌握' : '学习中',
-                    '创建时间': knowledge.createdAt,
-                    '图片数量': knowledge.images ? knowledge.images.length : 0
-                });
-            }
-        });
+        const dayKnowledge = knowledgeData[date];
+        if (Array.isArray(dayKnowledge)) {
+            dayKnowledge.forEach(knowledge => {
+                if (knowledge.subject === subject) {
+                    allKnowledge.push({
+                        '日期': date,
+                        '学科': knowledge.subject,
+                        '知识点名称': knowledge.title,
+                        '内容': knowledge.content,
+                        '标签': knowledge.tags ? knowledge.tags.join(', ') : '',
+                        '掌握状态': knowledge.mastered ? '已掌握' : '学习中',
+                        '创建时间': knowledge.createdAt,
+                        '图片数量': knowledge.images ? knowledge.images.length : 0
+                    });
+                }
+            });
+        }
     }
 
     if (allKnowledge.length === 0) {
@@ -3422,18 +3496,21 @@ function exportDataForSubject(subject) {
 function exportAllData() {
     const allKnowledge = [];
     for (const date in knowledgeData) {
-        knowledgeData[date].forEach(knowledge => {
-            allKnowledge.push({
-                '日期': date,
-                '学科': knowledge.subject,
-                '知识点名称': knowledge.title,
-                '内容': knowledge.content,
-                '标签': knowledge.tags ? knowledge.tags.join(', ') : '',
-                '掌握状态': knowledge.mastered ? '已掌握' : '学习中',
-                '创建时间': knowledge.createdAt,
-                '图片数量': knowledge.images ? knowledge.images.length : 0
+        const dayKnowledge = knowledgeData[date];
+        if (Array.isArray(dayKnowledge)) {
+            dayKnowledge.forEach(knowledge => {
+                allKnowledge.push({
+                    '日期': date,
+                    '学科': knowledge.subject,
+                    '知识点名称': knowledge.title,
+                    '内容': knowledge.content,
+                    '标签': knowledge.tags ? knowledge.tags.join(', ') : '',
+                    '掌握状态': knowledge.mastered ? '已掌握' : '学习中',
+                    '创建时间': knowledge.createdAt,
+                    '图片数量': knowledge.images ? knowledge.images.length : 0
+                });
             });
-        });
+        }
     }
 
     if (allKnowledge.length === 0) {
@@ -3539,7 +3616,7 @@ function handleFileSelect(file) {
 
     if (importStatus) {
         importStatus.style.display = 'block';
-        importStatus.innerHTML = '<div class="loading" style="margin: 0 auto 0.5rem;"></div><p style="font-size: 0.875rem; color: #6b7280;">正在读取文件...</p>';
+        importStatus.innerHTML = '<div class="loading" style="margin: 0 auto 0.5rem;"></div><p style="font-size: 0.875rem; color: #64748b;">正在读取文件...</p>';
     }
 
     const reader = new FileReader();
@@ -3586,7 +3663,7 @@ function processExcelData(data) {
 
     try {
         if (importStatus) {
-            importStatus.innerHTML = '<div class="loading" style="margin: 0 auto 0.5rem;"></div><p style="font-size: 0.875rem; color: #6b7280;">正在解析Excel文件...</p>';
+            importStatus.innerHTML = '<div class="loading" style="margin: 0 auto 0.5rem;"></div><p style="font-size: 0.875rem; color: #64748b;">正在解析Excel文件...</p>';
         }
 
         const workbook = XLSX.read(data, { type: 'array' });
@@ -3898,36 +3975,103 @@ async function handleEditKnowledge(e) {
     }
 
     // 更新知识点
-    const knowledgeIndex = knowledgeData[editingDate].findIndex(k => k.id === editingKnowledge.id);
-    if (knowledgeIndex !== -1) {
-        const tags = tagsText ? tagsText.split(' ').filter(tag => tag.trim() !== '') : [];
+    if (knowledgeData[editingDate] && Array.isArray(knowledgeData[editingDate])) {
+        const knowledgeIndex = knowledgeData[editingDate].findIndex(k => k.id === editingKnowledge.id);
+        if (knowledgeIndex !== -1) {
+            const tags = tagsText ? tagsText.split(' ').filter(tag => tag.trim() !== '') : [];
 
-        knowledgeData[editingDate][knowledgeIndex] = {
-            ...knowledgeData[editingDate][knowledgeIndex],
-            subject: subjectText,
-            title: titleText,
-            content: contentText,
-            tags: tags,
-            images: [...editingImages],
-            updatedAt: new Date().toISOString()
-        };
+            knowledgeData[editingDate][knowledgeIndex] = {
+                ...knowledgeData[editingDate][knowledgeIndex],
+                subject: subjectText,
+                title: titleText,
+                content: contentText,
+                tags: tags,
+                images: [...editingImages],
+                updatedAt: new Date().toISOString()
+            };
 
-        renderKnowledge();
+            renderKnowledge();
 
-        if (useLocalMode || !firebaseAvailable) {
-            localStorage.setItem('knowledge_' + currentUser, JSON.stringify(knowledgeData));
-            showSyncStatus('已保存到本地', 1500);
-        } else {
-            if (isOnline) {
-                await handleSmartSync();
+            if (useLocalMode || !firebaseAvailable) {
+                localStorage.setItem('knowledge_' + currentUser, JSON.stringify(knowledgeData));
+                showSyncStatus('已保存到本地', 1500);
             } else {
-                showSyncStatus('离线模式，数据将在网络恢复后同步', 3000);
+                if (isOnline) {
+                    await handleSmartSync();
+                } else {
+                    showSyncStatus('离线模式，数据将在网络恢复后同步', 3000);
+                }
             }
-        }
 
-        hideEditModal();
-        showSyncStatus('知识点已更新', 2000);
+            hideEditModal();
+            showSyncStatus('知识点已更新', 2000);
+        }
     }
+}
+
+// 执行数据清理
+function performDataCleanup() {
+    console.log('🧹 开始执行数据清理...');
+    
+    let cleanedDates = 0;
+    let cleanedKnowledge = 0;
+    let cleanedImages = 0;
+    
+    for (const date in knowledgeData) {
+        if (!knowledgeData.hasOwnProperty(date)) continue;
+        
+        const dateData = knowledgeData[date];
+        
+        // 检查 dateData 是否为数组
+        if (!Array.isArray(dateData)) {
+            console.warn(`日期 ${date} 的数据不是数组，跳过清理:`, dateData);
+            delete knowledgeData[date];
+            cleanedDates++;
+            continue;
+        }
+        
+        const originalLength = dateData.length;
+        
+        // 清理无效知识点
+        knowledgeData[date] = dateData.filter(item => {
+            if (!item || !item.title || !item.subject) {
+                console.log(`清理无效知识点: ${item ? item.title : '未知'}`);
+                cleanedKnowledge++;
+                return false;
+            }
+            return true;
+        });
+        
+        // 清理无效图片
+        knowledgeData[date].forEach(item => {
+            if (item.images && Array.isArray(item.images)) {
+                const originalImageCount = item.images.length;
+                item.images = item.images.filter(img => img && img.data);
+                cleanedImages += originalImageCount - item.images.length;
+            }
+        });
+        
+        // 删除空日期
+        if (knowledgeData[date].length === 0) {
+            delete knowledgeData[date];
+            cleanedDates++;
+        }
+    }
+    
+    console.log(`✅ 清理完成: ${cleanedDates}个日期, ${cleanedKnowledge}个知识点, ${cleanedImages}张图片`);
+    
+    // 更新显示
+    updateDataStats();
+    renderKnowledge();
+    
+    // 保存到本地
+    if (currentUser) {
+        localStorage.setItem('knowledge_' + currentUser, JSON.stringify(knowledgeData));
+    }
+    
+    showSyncStatus(`清理完成: ${cleanedDates}个日期, ${cleanedKnowledge}个知识点`, 3000);
+    
+    return { cleanedDates, cleanedKnowledge, cleanedImages };
 }
 
 console.log('考研知识点记录本应用初始化完成 - 大数据版');
