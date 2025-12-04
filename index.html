@@ -904,6 +904,37 @@ body {
     background: #3b82f6;
     transition: width 0.3s ease;
 }
+
+/* 重复数据提示样式 */
+.duplicate-warning {
+    background-color: #fef3c7;
+    border: 1px solid #fbbf24;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    color: #92400e;
+    font-size: 0.875rem;
+}
+
+.duplicate-warning-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.duplicate-list {
+    margin-top: 0.5rem;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.duplicate-item {
+    padding: 0.25rem 0;
+    border-bottom: 1px solid #fde68a;
+}
+
+.duplicate-item:last-child {
+    border-bottom: none;
+}
 </style>
 </head>
 <body>
@@ -964,6 +995,7 @@ body {
                 <div class="header-actions">
                     <button id="data-management-btn" class="header-btn warning">📊 数据管理</button>
                     <button id="cleanup-btn" class="header-btn warning">🧹 清理</button>
+                    <button id="find-duplicates-btn" class="header-btn warning">🔍 查找重复</button>
                     <button id="backup-btn" class="header-btn">💾 备份</button>
                     <button id="sync-btn" class="header-btn">
                         <div id="sync-spinner" class="loading" style="display: none; margin-right: 0.25rem;"></div>
@@ -980,6 +1012,17 @@ body {
         <div style="text-align: center; margin-bottom: 2rem;">
             <h1 style="font-size: 2rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem;">🎓 考研知识点记录本</h1>
             <p style="color: #64748b;">高效记录，系统复习，成功上岸 - 支持大数据存储</p>
+        </div>
+
+        <!-- 重复数据警告 -->
+        <div id="duplicate-warning" class="duplicate-warning" style="display: none;">
+            <div class="duplicate-warning-title">⚠️ 发现重复数据</div>
+            <div id="duplicate-count"></div>
+            <div class="duplicate-list" id="duplicate-list"></div>
+            <div style="margin-top: 0.5rem;">
+                <button id="auto-clean-duplicates" class="btn btn-warning" style="font-size: 0.875rem; padding: 0.5rem 1rem;">自动清理重复项</button>
+                <button id="hide-duplicate-warning" class="btn" style="font-size: 0.875rem; padding: 0.5rem 1rem; background-color: #e5e7eb; color: #374151; margin-left: 0.5rem;">忽略</button>
+            </div>
         </div>
 
         <!-- 数据管理面板 -->
@@ -1014,6 +1057,7 @@ body {
                 <button id="clean-large-btn" class="btn btn-warning">🧹 清理大图片</button>
                 <button id="optimize-btn" class="btn btn-primary">⚡ 优化存储</button>
                 <button id="export-backup-btn" class="btn btn-secondary">💾 导出备份</button>
+                <button id="repair-btn" class="btn btn-warning">🔧 修复数据</button>
             </div>
         </div>
 
@@ -1342,6 +1386,12 @@ let syncQueue = [];
 let lastSyncTime = null;
 let syncStrategy = 'direct'; // 'direct', 'batch', 'layered'
 
+// 重复数据状态
+let duplicateData = {
+    duplicates: [],
+    checked: false
+};
+
 // 加载状态管理
 const loadingOverlay = document.getElementById('loading-overlay');
 const loadingStatus = document.getElementById('loading-status');
@@ -1356,6 +1406,272 @@ function hideLoading() {
     if (loadingOverlay) {
         loadingOverlay.style.display = 'none';
     }
+}
+
+// 数据格式化函数 - 确保数据格式一致并去除重复
+function normalizeDataFormat(data) {
+    if (!data || typeof data !== 'object') {
+        return {};
+    }
+    
+    const normalizedData = {};
+    
+    for (const key in data) {
+        if (!data.hasOwnProperty(key)) continue;
+        
+        // 跳过批次数据，只处理日期数据
+        if (key.startsWith('batch_')) {
+            console.log(`跳过批次数据: ${key}`);
+            continue;
+        }
+        
+        let value = data[key];
+        
+        // 如果是对象而不是数组，尝试转换
+        if (typeof value === 'object' && !Array.isArray(value)) {
+            console.warn(`数据格式不一致: ${key} 是对象，尝试转换为数组`);
+            
+            // 检查是否是有效的知识点对象
+            if (value.title && value.subject && value.content) {
+                // 单个知识点对象，转换为数组
+                value = [value];
+            } else {
+                // 尝试将对象转换为数组
+                value = Object.values(value).filter(item => 
+                    typeof item === 'object' && item !== null && item.title
+                );
+            }
+        }
+        
+        // 确保数据是数组
+        if (Array.isArray(value)) {
+            // 过滤和标准化每个知识点
+            normalizedData[key] = value.filter(item => {
+                if (!item || typeof item !== 'object') return false;
+                
+                // 确保必要字段存在
+                if (!item.id) item.id = Date.now() + Math.random();
+                if (!item.title) item.title = '未命名知识点';
+                if (!item.subject) item.subject = '未分类';
+                if (!item.content) item.content = '';
+                if (!item.createdAt) item.createdAt = new Date().toISOString();
+                if (!item.mastered) item.mastered = false;
+                if (!item.tags) item.tags = [];
+                if (!item.images) item.images = [];
+                
+                return true;
+            });
+            
+            // 去除重复项
+            normalizedData[key] = removeDuplicates(normalizedData[key]);
+        } else {
+            console.warn(`无法标准化数据: ${key}`, value);
+        }
+    }
+    
+    return normalizedData;
+}
+
+// 去除重复知识点函数
+function removeDuplicates(knowledgeArray) {
+    if (!Array.isArray(knowledgeArray) || knowledgeArray.length <= 1) {
+        return knowledgeArray;
+    }
+    
+    const uniqueItems = [];
+    const seen = new Set();
+    
+    for (const item of knowledgeArray) {
+        // 创建唯一标识符，基于标题、学科和内容
+        const identifier = `${item.subject}_${item.title}_${item.content.substring(0, 100)}`;
+        
+        if (!seen.has(identifier)) {
+            seen.add(identifier);
+            uniqueItems.push(item);
+        } else {
+            console.log(`发现重复知识点: ${item.title} (${item.subject})`);
+        }
+    }
+    
+    return uniqueItems;
+}
+
+// 查找重复数据
+function findDuplicateData() {
+    console.log('🔍 开始查找重复数据...');
+    
+    // 标准化数据格式
+    knowledgeData = normalizeDataFormat(knowledgeData);
+    
+    const duplicates = [];
+    const seen = new Map();
+    
+    for (const date in knowledgeData) {
+        if (!knowledgeData.hasOwnProperty(date)) continue;
+        
+        const dateData = knowledgeData[date];
+        if (!Array.isArray(dateData)) continue;
+        
+        dateData.forEach(item => {
+            // 创建唯一标识符，基于标题、学科和内容
+            const identifier = `${item.subject}_${item.title}_${item.content.substring(0, 100)}`;
+            
+            if (seen.has(identifier)) {
+                // 如果已经见过，添加到重复列表
+                const existingItem = seen.get(identifier);
+                duplicates.push({
+                    identifier,
+                    items: [
+                        ...existingItem.items,
+                        { date, id: item.id, title: item.title, subject: item.subject }
+                    ]
+                });
+                existingItem.items.push({ date, id: item.id, title: item.title, subject: item.subject });
+            } else {
+                // 首次见到，添加到已见列表
+                seen.set(identifier, {
+                    items: [{ date, id: item.id, title: item.title, subject: item.subject }]
+                });
+            }
+        });
+    }
+    
+    // 过滤出真正的重复项（出现次数大于1的）
+    const realDuplicates = duplicates.filter(dup => dup.items.length > 1);
+    
+    duplicateData.duplicates = realDuplicates;
+    duplicateData.checked = true;
+    
+    console.log(`🔍 查找完成: 发现 ${realDuplicates.length} 组重复数据`);
+    
+    // 显示重复数据警告
+    if (realDuplicates.length > 0) {
+        showDuplicateWarning(realDuplicates);
+    } else {
+        showSyncStatus('未发现重复数据', 2000);
+    }
+    
+    return realDuplicates;
+}
+
+// 显示重复数据警告
+function showDuplicateWarning(duplicates) {
+    const warningDiv = document.getElementById('duplicate-warning');
+    const countDiv = document.getElementById('duplicate-count');
+    const listDiv = document.getElementById('duplicate-list');
+    
+    if (!warningDiv || !countDiv || !listDiv) return;
+    
+    // 计算重复项总数
+    let totalDuplicates = 0;
+    duplicates.forEach(dup => {
+        totalDuplicates += dup.items.length - 1; // 减1是因为保留一个
+    });
+    
+    countDiv.textContent = `发现 ${duplicates.length} 组重复数据，共 ${totalDuplicates} 个重复项`;
+    
+    // 显示前5组重复数据
+    listDiv.innerHTML = '';
+    duplicates.slice(0, 5).forEach(dup => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'duplicate-item';
+        itemDiv.innerHTML = `
+            <strong>${dup.items[0].title}</strong> (${dup.items[0].subject})
+            <span style="color: #92400e; font-size: 0.75rem;">重复 ${dup.items.length} 次</span>
+        `;
+        listDiv.appendChild(itemDiv);
+    });
+    
+    if (duplicates.length > 5) {
+        const moreDiv = document.createElement('div');
+        moreDiv.className = 'duplicate-item';
+        moreDiv.textContent = `...还有 ${duplicates.length - 5} 组重复数据`;
+        listDiv.appendChild(moreDiv);
+    }
+    
+    warningDiv.style.display = 'block';
+}
+
+// 自动清理重复数据
+function autoCleanDuplicates() {
+    if (!duplicateData.checked || duplicateData.duplicates.length === 0) {
+        showSyncStatus('没有需要清理的重复数据', 2000);
+        return;
+    }
+    
+    if (!confirm(`确定要自动清理 ${duplicateData.duplicates.length} 组重复数据吗？\n\n每组重复数据将只保留最早创建的一项。`)) {
+        return;
+    }
+    
+    console.log('🧹 开始自动清理重复数据...');
+    
+    let cleanedCount = 0;
+    
+    duplicateData.duplicates.forEach(dup => {
+        // 按创建时间排序，保留最早的
+        const itemsWithDate = dup.items.map(item => {
+            const knowledgeItem = findKnowledgeItem(item.date, item.id);
+            return {
+                ...item,
+                createdAt: knowledgeItem ? knowledgeItem.createdAt : new Date().toISOString()
+            };
+        });
+        
+        itemsWithDate.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        
+        // 保留最早的，删除其余的
+        for (let i = 1; i < itemsWithDate.length; i++) {
+            const itemToDelete = itemsWithDate[i];
+            deleteKnowledgeItem(itemToDelete.date, itemToDelete.id);
+            cleanedCount++;
+        }
+    });
+    
+    console.log(`🧹 自动清理完成: 删除了 ${cleanedCount} 个重复项`);
+    
+    // 重置重复数据状态
+    duplicateData.duplicates = [];
+    duplicateData.checked = false;
+    
+    // 隐藏警告
+    const warningDiv = document.getElementById('duplicate-warning');
+    if (warningDiv) warningDiv.style.display = 'none';
+    
+    // 更新显示
+    updateDataStats();
+    renderKnowledge();
+    
+    // 保存数据
+    if (currentUser) {
+        localStorage.setItem('knowledge_' + currentUser, JSON.stringify(knowledgeData));
+    }
+    
+    showSyncStatus(`自动清理完成: 删除了 ${cleanedCount} 个重复项`, 3000);
+}
+
+// 查找知识点项
+function findKnowledgeItem(date, id) {
+    if (!knowledgeData[date] || !Array.isArray(knowledgeData[date])) {
+        return null;
+    }
+    
+    return knowledgeData[date].find(item => String(item.id) === String(id));
+}
+
+// 删除知识点项
+function deleteKnowledgeItem(date, id) {
+    if (!knowledgeData[date] || !Array.isArray(knowledgeData[date])) {
+        return false;
+    }
+    
+    const originalLength = knowledgeData[date].length;
+    knowledgeData[date] = knowledgeData[date].filter(item => String(item.id) !== String(id));
+    
+    if (knowledgeData[date].length === 0) {
+        delete knowledgeData[date];
+    }
+    
+    return originalLength > knowledgeData[date].length;
 }
 
 // 简化的初始化函数
@@ -1550,6 +1866,19 @@ function initializeEventListeners() {
         updateEditFormLabels(e.target.value);
     });
 
+    // 重复数据相关事件监听
+    const findDuplicatesBtn = document.getElementById('find-duplicates-btn');
+    if (findDuplicatesBtn) findDuplicatesBtn.addEventListener('click', findDuplicateData);
+
+    const autoCleanDuplicatesBtn = document.getElementById('auto-clean-duplicates');
+    if (autoCleanDuplicatesBtn) autoCleanDuplicatesBtn.addEventListener('click', autoCleanDuplicates);
+
+    const hideDuplicateWarningBtn = document.getElementById('hide-duplicate-warning');
+    if (hideDuplicateWarningBtn) hideDuplicateWarningBtn.addEventListener('click', () => {
+        const warningDiv = document.getElementById('duplicate-warning');
+        if (warningDiv) warningDiv.style.display = 'none';
+    });
+
     initializeFileDrop();
     initializeImageUpload();
     initializeImagePreviewModal();
@@ -1589,6 +1918,7 @@ function initializeDataManagement() {
     const cleanLargeBtn = document.getElementById('clean-large-btn');
     const optimizeBtn = document.getElementById('optimize-btn');
     const exportBackupBtn = document.getElementById('export-backup-btn');
+    const repairBtn = document.getElementById('repair-btn');
 
     // 切换数据管理面板
     if (dataManagementBtn) {
@@ -1646,6 +1976,18 @@ function initializeDataManagement() {
         });
     }
 
+    // 修复数据按钮
+    if (repairBtn) {
+        repairBtn.addEventListener('click', () => {
+            if (confirm('确定要修复数据吗？这将尝试修复数据格式问题。')) {
+                const repairedCount = repairData();
+                updateDataStats();
+                renderKnowledge();
+                showSyncStatus(`数据修复完成，修复了 ${repairedCount} 个日期的数据`, 3000);
+            }
+        });
+    }
+
     // 定期更新数据统计
     setInterval(updateDataStats, 30000); // 每30秒更新一次
 }
@@ -1657,13 +1999,22 @@ function updateDataStats() {
         return;
     }
 
+    // 标准化数据格式
+    knowledgeData = normalizeDataFormat(knowledgeData);
+
     let totalSize = 0;
     let totalKnowledge = 0;
     let totalImages = 0;
-    const totalDates = Object.keys(knowledgeData).length;
+    let totalDates = 0;
 
     for (const date in knowledgeData) {
         if (!knowledgeData.hasOwnProperty(date)) continue;
+        
+        // 跳过批次数据，只处理日期数据
+        if (date.startsWith('batch_')) {
+            console.log(`跳过批次数据: ${date}`);
+            continue;
+        }
         
         const dateData = knowledgeData[date];
         
@@ -1673,6 +2024,7 @@ function updateDataStats() {
             continue;
         }
         
+        totalDates++;
         totalKnowledge += dateData.length;
         
         dateData.forEach(item => {
@@ -1791,6 +2143,9 @@ function analyzeData() {
         return;
     }
 
+    // 标准化数据格式
+    knowledgeData = normalizeDataFormat(knowledgeData);
+
     const analysis = {
         totalSize: 0,
         totalKnowledge: 0,
@@ -1799,7 +2154,8 @@ function analyzeData() {
         largeImages: [],
         largeDates: [],
         subjectDistribution: {},
-        recentActivity: []
+        recentActivity: [],
+        duplicates: []
     };
 
     // 分析每个日期
@@ -1861,12 +2217,17 @@ function analyzeData() {
     const sortedDates = Object.keys(knowledgeData).sort((a, b) => new Date(b) - new Date(a));
     analysis.recentActivity = sortedDates.slice(0, 7);
 
+    // 查找重复数据
+    const duplicates = findDuplicateData();
+    analysis.duplicates = duplicates;
+
     // 显示分析结果
     console.log('📊 数据分析结果:');
     console.log(`总数据大小: ${(analysis.totalSize / 1024 / 1024).toFixed(2)}MB`);
     console.log(`知识点总数: ${analysis.totalKnowledge}`);
     console.log(`图片总数: ${analysis.totalImages}`);
     console.log(`学习天数: ${analysis.totalDates}`);
+    console.log(`重复数据组数: ${analysis.duplicates.length}`);
     
     if (analysis.largeDates.length > 0) {
         console.log(`大日期数据 (${analysis.largeDates.length}个):`);
@@ -1885,7 +2246,7 @@ function analyzeData() {
     console.log('学科分布:', analysis.subjectDistribution);
     console.log('最近活动:', analysis.recentActivity);
 
-    showSyncStatus(`分析完成: ${(analysis.totalSize / 1024 / 1024).toFixed(2)}MB, ${analysis.totalKnowledge}个知识点`, 3000);
+        showSyncStatus(`分析完成: ${(analysis.totalSize / 1024 / 1024).toFixed(2)}MB, ${analysis.totalKnowledge}个知识点, ${analysis.duplicates.length}组重复`, 3000);
     
     return analysis;
 }
@@ -1893,6 +2254,9 @@ function analyzeData() {
 // 清理大图片
 function cleanLargeImages() {
     console.log('🧹 开始清理大图片...');
+    
+    // 标准化数据格式
+    knowledgeData = normalizeDataFormat(knowledgeData);
     
     let cleanedCount = 0;
     let cleanedSize = 0;
@@ -1953,6 +2317,9 @@ function cleanLargeImages() {
 function optimizeStorage() {
     console.log('⚡ 开始优化存储...');
     
+    // 标准化数据格式
+    knowledgeData = normalizeDataFormat(knowledgeData);
+    
     let optimizedCount = 0;
     let optimizedSize = 0;
     
@@ -2006,6 +2373,9 @@ function optimizeStorage() {
 // 创建数据备份
 function createDataBackup() {
     console.log('💾 创建数据备份...');
+    
+    // 标准化数据格式
+    knowledgeData = normalizeDataFormat(knowledgeData);
     
     if (!knowledgeData || Object.keys(knowledgeData).length === 0) {
         showSyncStatus('没有数据可以备份', 2000);
@@ -2078,6 +2448,9 @@ async function handleSmartSync() {
         showSyncStatus('智能同步分析...');
         console.log('🧠 智能同步分析...');
         
+        // 标准化数据格式
+        knowledgeData = normalizeDataFormat(knowledgeData);
+        
         // 统计数据
         const totalSize = JSON.stringify(knowledgeData).length;
         const totalDates = Object.keys(knowledgeData).length;
@@ -2102,6 +2475,10 @@ async function handleSmartSync() {
         }
         
         lastSyncTime = new Date().toISOString();
+        
+        // 同步成功后刷新显示
+        updateDataStats();
+        renderKnowledge();
         
     } catch (error) {
         console.error('智能同步失败:', error);
@@ -2287,7 +2664,9 @@ async function layeredStorageSync() {
         let imageCount = 0;
         
         for (const date in knowledgeData) {
-            if (!knowledgeData.hasOwnProperty(date)) continue;            const dateData = knowledgeData[date];
+            if (!knowledgeData.hasOwnProperty(date)) continue;
+            
+            const dateData = knowledgeData[date];
             
             // 检查 dateData 是否为数组
             if (!Array.isArray(dateData)) {
@@ -2431,11 +2810,17 @@ async function processSyncQueue() {
     }
 }
 
-// 修复数据加载函数 - 处理分层存储和分批同步的数据
 async function loadUserKnowledge() {
     if (!currentUser) return;
     if (useLocalMode || !firebaseAvailable) {
-        knowledgeData = JSON.parse(localStorage.getItem('knowledge_' + currentUser) || '{}');
+        const localData = localStorage.getItem('knowledge_' + currentUser);
+        if (localData) {
+            knowledgeData = JSON.parse(localData);
+            // 标准化数据格式
+            knowledgeData = normalizeDataFormat(knowledgeData);
+        } else {
+            knowledgeData = {};
+        }
         return;
     }
     try {
@@ -2465,6 +2850,9 @@ async function loadUserKnowledge() {
             await loadDirectData();
         }
         
+        // 标准化数据格式
+        knowledgeData = normalizeDataFormat(knowledgeData);
+        
         console.log('✅ 数据加载完成');
         database.ref('users/' + currentUser + '/lastLogin').set(new Date().toISOString());
         
@@ -2476,6 +2864,8 @@ async function loadUserKnowledge() {
         const localData = localStorage.getItem('knowledge_' + currentUser);
         if (localData) {
             knowledgeData = JSON.parse(localData);
+            // 标准化数据格式
+            knowledgeData = normalizeDataFormat(knowledgeData);
             console.log('✅ 从本地备份加载成功');
             showSyncStatus('已从本地备份加载数据', 2000);
         } else {
@@ -2496,6 +2886,16 @@ async function loadDirectData() {
             console.log('🔄 检测到分批数据，正在合并...');
             knowledgeData = {};
             
+            // 首先处理非批次数据（普通日期数据）
+            for (const key in data) {
+                if (!key.startsWith('batch_') && !key.startsWith('item_')) {
+                    if (Array.isArray(data[key])) {
+                        knowledgeData[key] = data[key];
+                    }
+                }
+            }
+            
+            // 然后处理批次数据
             for (const key in data) {
                 if (key.startsWith('batch_')) {
                     const batchData = data[key];
@@ -2508,11 +2908,6 @@ async function loadDirectData() {
                                 knowledgeData[date] = knowledgeData[date].concat(batchData[date]);
                             }
                         }
-                    }
-                } else if (!key.startsWith('batch_') && !key.startsWith('item_')) {
-                    // 普通日期数据
-                    if (Array.isArray(data[key])) {
-                        knowledgeData[key] = data[key];
                     }
                 }
             }
@@ -2535,6 +2930,16 @@ async function loadBatchData() {
     const data = snapshot.val();
     
     if (data && typeof data === 'object') {
+        // 首先处理非批次数据（普通日期数据）
+        for (const key in data) {
+            if (!key.startsWith('batch_') && !key.startsWith('item_')) {
+                if (Array.isArray(data[key])) {
+                    knowledgeData[key] = data[key];
+                }
+            }
+        }
+        
+        // 然后处理批次数据
         for (const key in data) {
             if (key.startsWith('batch_')) {
                 const batchData = data[key];
@@ -2547,11 +2952,6 @@ async function loadBatchData() {
                             knowledgeData[date] = knowledgeData[date].concat(batchData[date]);
                         }
                     }
-                }
-            } else if (!key.startsWith('item_')) {
-                // 普通日期数据
-                if (Array.isArray(data[key])) {
-                    knowledgeData[key] = data[key];
                 }
             }
         }
@@ -3243,8 +3643,7 @@ async function handleLogin(e) {
 
         if (useLocalMode) {
             currentUser = username;
-            knowledgeData = JSON.parse(localStorage.getItem('knowledge_' + username) || '{}');
-            console.log('本地存储模式登录成功');
+            await loadUserKnowledge();
             showApp();
         } else {
             if (!database) throw new Error('Firebase 未初始化');
@@ -3280,7 +3679,7 @@ async function handleLogin(e) {
                 const useLocalCheckbox = document.getElementById('use-local');
                 if (useLocalCheckbox) useLocalCheckbox.checked = true;
                 currentUser = username;
-                knowledgeData = JSON.parse(localStorage.getItem('knowledge_' + username) || '{}');
+                await loadUserKnowledge();
                 showApp();
             } else {
                 alert('登录失败，请重试');
@@ -3335,6 +3734,11 @@ function showApp() {
     // 初始化数据统计
     updateDataStats();
     renderKnowledge();
+    
+    // 自动检查重复数据
+    setTimeout(() => {
+        findDuplicateData();
+    }, 1000);
 }
 
 // 保存用户数据
@@ -3396,29 +3800,33 @@ function renderKnowledge() {
     if (!knowledgeListContainer) return;
     
     knowledgeListContainer.innerHTML = '';
+    
+    // 标准化数据格式
+    knowledgeData = normalizeDataFormat(knowledgeData);
+
     const sortedDates = Object.keys(knowledgeData).sort((a, b) => new Date(b) - new Date(a));
 
     const filteredKnowledgeData = {};
-    
-    if (currentFilterSubject) {
-        sortedDates.forEach(dateStr => {
-            const dayKnowledge = knowledgeData[dateStr];
-            if (Array.isArray(dayKnowledge)) {
-                const filtered = dayKnowledge.filter(k => k.subject === currentFilterSubject);
-                if (filtered.length > 0) {
-                    filteredKnowledgeData[dateStr] = filtered;
+    // 过滤掉批次数据，只处理日期数据
+    for (const date in knowledgeData) {
+        if (!date.startsWith('batch_') && !date.startsWith('item_')) {
+            if (currentFilterSubject) {
+                const dayKnowledge = knowledgeData[date];
+                if (Array.isArray(dayKnowledge)) {
+                    const filtered = dayKnowledge.filter(k => k.subject === currentFilterSubject);
+                    if (filtered.length > 0) {
+                        filteredKnowledgeData[date] = filtered;
+                    }
+                }
+            } else {
+                const dayKnowledge = knowledgeData[date];
+                if (Array.isArray(dayKnowledge)) {
+                    filteredKnowledgeData[date] = dayKnowledge;
                 }
             }
-        });
-    } else {
-        sortedDates.forEach(dateStr => {
-            const dayKnowledge = knowledgeData[dateStr];
-            if (Array.isArray(dayKnowledge)) {
-                filteredKnowledgeData[dateStr] = dayKnowledge;
-            }
-        });
+        }
     }
-
+    
     const filteredSortedDates = Object.keys(filteredKnowledgeData).sort((a, b) => new Date(b) - new Date(a));
 
     if (filteredSortedDates.length === 0) {
@@ -4057,7 +4465,7 @@ function processExcelData(data) {
             for (const col of columns) {
                 if (col === dateColumn || col === subjectColumn || col === titleColumn) continue;
                 if (col.includes('内容') || col.toLowerCase().includes('content')) newRow['内容'] = row[col];
-                else if (col.includes('标签') || col.toLowerCase().includes('tag')) newRow['标签'] = row[col];
+                                else if (col.includes('标签') || col.toLowerCase().includes('tag')) newRow['标签'] = row[col];
                 else if (col.includes('掌握') || col.toLowerCase().includes('master')) newRow['掌握状态'] = row[col];
                 else newRow[col] = row[col];
             }
@@ -4081,7 +4489,8 @@ function showImportPreview(data) {
     const importPreview = document.getElementById('import-preview');
     const previewTable = document.getElementById('preview-table');
     const importSummary = document.getElementById('import-summary');
-	    if (!importPreview || !previewTable || !importSummary) return;
+    
+    if (!importPreview || !previewTable || !importSummary) return;
 
     let tableHTML = `
 <thead>
@@ -4187,6 +4596,9 @@ async function handleImport() {
             knowledgeData[date].push(newKnowledge);
             importCount++;
         }
+
+        // 标准化数据格式并去除重复
+        knowledgeData = normalizeDataFormat(knowledgeData);
 
         await handleSmartSync();
 
@@ -4339,6 +4751,9 @@ async function handleEditKnowledge(e) {
                 updatedAt: new Date().toISOString()
             };
 
+            // 标准化数据格式并去除重复
+            knowledgeData = normalizeDataFormat(knowledgeData);
+
             renderKnowledge();
 
             if (useLocalMode || !firebaseAvailable) {
@@ -4361,6 +4776,9 @@ async function handleEditKnowledge(e) {
 // 执行数据清理
 function performDataCleanup() {
     console.log('🧹 开始执行数据清理...');
+    
+    // 标准化数据格式
+    knowledgeData = normalizeDataFormat(knowledgeData);
     
     let cleanedDates = 0;
     let cleanedKnowledge = 0;
@@ -4421,6 +4839,81 @@ function performDataCleanup() {
     showSyncStatus(`清理完成: ${cleanedDates}个日期, ${cleanedKnowledge}个知识点`, 3000);
     
     return { cleanedDates, cleanedKnowledge, cleanedImages };
+}
+
+// 数据修复函数
+function repairData() {
+    console.log('🔧 开始数据修复...');
+    
+    let repairedCount = 0;
+    
+    for (const date in knowledgeData) {
+        if (!knowledgeData.hasOwnProperty(date)) continue;
+        
+        let dateData = knowledgeData[date];
+        
+        // 如果是对象而不是数组，尝试转换
+        if (typeof dateData === 'object' && !Array.isArray(dateData)) {
+            console.warn(`修复日期 ${date} 的数据格式`);
+            
+            // 检查是否是批次数据
+            if (date.startsWith('batch_')) {
+                // 批次数据应该是包含多个日期的对象
+                const batchArray = [];
+                for (const batchDate in dateData) {
+                    if (Array.isArray(dateData[batchDate])) {
+                        batchArray.push(...dateData[batchDate]);
+                    }
+                }
+                dateData = batchArray;
+            } else {
+                // 尝试将对象转换为数组
+                dateData = Object.values(dateData).filter(item => 
+                    typeof item === 'object' && item !== null
+                );
+            }
+            
+            // 更新knowledgeData中的数据
+            knowledgeData[date] = dateData;
+            repairedCount++;
+        }
+        
+        // 确保数据是数组
+        if (!Array.isArray(dateData)) {
+            console.warn(`无法修复日期 ${date} 的数据，删除该日期`);
+            delete knowledgeData[date];
+            continue;
+        }
+        
+        // 修复数据项
+        knowledgeData[date] = dateData.filter(item => {
+            if (!item || typeof item !== 'object') {
+                console.warn(`删除无效数据项:`, item);
+                return false;
+            }
+            
+            // 确保有必要的字段
+            if (!item.id) item.id = Date.now() + Math.random();
+            if (!item.title) item.title = '未命名知识点';
+            if (!item.subject) item.subject = '未分类';
+            if (!item.content) item.content = '';
+            if (!item.createdAt) item.createdAt = new Date().toISOString();
+            if (!item.mastered) item.mastered = false;
+            if (!item.tags) item.tags = [];
+            if (!item.images) item.images = [];
+            
+            return true;
+        });
+    }
+    
+    console.log(`✅ 数据修复完成，修复了 ${repairedCount} 个日期的数据`);
+    
+    // 保存修复后的数据
+    if (currentUser) {
+        localStorage.setItem('knowledge_' + currentUser, JSON.stringify(knowledgeData));
+    }
+    
+    return repairedCount;
 }
 
 console.log('考研知识点记录本应用初始化完成 - 大数据版');
