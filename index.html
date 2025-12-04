@@ -1336,6 +1336,12 @@ let dataManagementStats = {
     lastAnalysis: null
 };
 
+// 同步状态
+let syncInProgress = false;
+let syncQueue = [];
+let lastSyncTime = null;
+let syncStrategy = 'direct'; // 'direct', 'batch', 'layered'
+
 // 加载状态管理
 const loadingOverlay = document.getElementById('loading-overlay');
 const loadingStatus = document.getElementById('loading-status');
@@ -1561,6 +1567,10 @@ function initializeEventListeners() {
     window.addEventListener('online', () => {
         isOnline = true;
         showSyncStatus('网络已连接', 2000);
+        // 如果有同步队列，尝试同步
+        if (syncQueue.length > 0 && !syncInProgress) {
+            processSyncQueue();
+        }
     });
 
     window.addEventListener('offline', () => {
@@ -2037,7 +2047,7 @@ function exportDataBackup() {
     createDataBackup();
 }
 
-// 智能分批同步函数
+// 智能分批同步函数 - 修复版本
 async function handleSmartSync() {
     if (!currentUser) {
         console.log('❌ 未登录');
@@ -2057,7 +2067,14 @@ async function handleSmartSync() {
         return;
     }
     
+    if (syncInProgress) {
+        console.log('⏳ 同步正在进行中，请稍候');
+        showSyncStatus('同步正在进行中，请稍候', 2000);
+        return;
+    }
+    
     try {
+        syncInProgress = true;
         showSyncStatus('智能同步分析...');
         console.log('🧠 智能同步分析...');
         
@@ -2069,30 +2086,59 @@ async function handleSmartSync() {
         console.log(`   总大小: ${(totalSize / 1024 / 1024).toFixed(2)}MB`);
         console.log(`   日期数量: ${totalDates}`);
         
-        if (totalSize < 10 * 1024 * 1024) {
+        // 根据数据大小选择同步策略
+        if (totalSize < 5 * 1024 * 1024) { // 5MB以下使用直接同步
             console.log('📊 数据较小，使用直接同步');
+            syncStrategy = 'direct';
             await saveUserKnowledge();
-        } else if (totalSize < 50 * 1024 * 1024) {
+        } else if (totalSize < 20 * 1024 * 1024) { // 5-20MB使用分批同步
             console.log('📊 数据中等，使用分批同步');
+            syncStrategy = 'batch';
             await batchSync();
-        } else {
+        } else { // 20MB以上使用分层存储
             console.log('📊 数据很大，使用分层存储');
+            syncStrategy = 'layered';
             await layeredStorageSync();
         }
+        
+        lastSyncTime = new Date().toISOString();
         
     } catch (error) {
         console.error('智能同步失败:', error);
         showSyncStatus('同步失败: ' + error.message, 3000);
+        
+        // 同步失败时，添加到同步队列
+        if (isOnline) {
+            syncQueue.push({
+                type: 'full',
+                timestamp: new Date().toISOString(),
+                data: JSON.parse(JSON.stringify(knowledgeData))
+            });
+            console.log('已添加到同步队列，将在下次同步时重试');
+        }
+    } finally {
+        syncInProgress = false;
     }
 }
 
-// 分批同步函数
+// 分批同步函数 - 修复版本
 async function batchSync() {
     if (!currentUser) return;
     
     try {
         showSyncStatus('分批同步中...');
         console.log('🚀 开始分批同步...');
+        
+        // 首先保存元数据
+        const metadata = {
+            totalSize: JSON.stringify(knowledgeData).length,
+            totalDates: Object.keys(knowledgeData).length,
+            syncStrategy: 'batch',
+            lastSyncTime: new Date().toISOString()
+        };
+        
+        await database.ref('metadata/' + currentUser).set(metadata);
+        console.log('✅ 元数据同步完成');
         
         const allDates = Object.keys(knowledgeData).sort((a, b) => new Date(b) - new Date(a));
         const totalDates = allDates.length;
@@ -2172,7 +2218,8 @@ async function batchSync() {
                             try {
                                 await database.ref('knowledge/' + currentUser + '/' + date).set(knowledgeData[date]);
                                 console.log(`  ✅ 单独同步 ${date}`);
-                            } catch (error) {                                console.error(`  ❌ 单独同步失败 ${date}:`, error);
+                            } catch (error) {
+                                console.error(`  ❌ 单独同步失败 ${date}:`, error);
                                 failedBatches++;
                             }
                         }
@@ -2183,6 +2230,7 @@ async function batchSync() {
                     }
                 }
                 
+                // 添加延迟，避免Firebase限制
                 await new Promise(resolve => setTimeout(resolve, 300));
                 
             } catch (error) {
@@ -2210,10 +2258,11 @@ async function batchSync() {
     } catch (error) {
         console.error('分批同步失败:', error);
         showSyncStatus('分批同步失败: ' + error.message, 3000);
+        throw error;
     }
 }
 
-// 分层存储函数
+// 分层存储函数 - 修复版本
 async function layeredStorageSync() {
     if (!currentUser) return;
     
@@ -2221,15 +2270,24 @@ async function layeredStorageSync() {
         showSyncStatus('分层存储同步中...');
         console.log('🗂️ 开始分层存储...');
         
+        // 首先保存元数据
+        const metadata = {
+            totalSize: JSON.stringify(knowledgeData).length,
+            totalDates: Object.keys(knowledgeData).length,
+            syncStrategy: 'layered',
+            lastSyncTime: new Date().toISOString()
+        };
+        
+        await database.ref('metadata/' + currentUser).set(metadata);
+        console.log('✅ 元数据同步完成');
+        
         const textData = {};
         const imageData = {};
         let totalImageSize = 0;
         let imageCount = 0;
         
         for (const date in knowledgeData) {
-            if (!knowledgeData.hasOwnProperty(date)) continue;
-            
-            const dateData = knowledgeData[date];
+            if (!knowledgeData.hasOwnProperty(date)) continue;            const dateData = knowledgeData[date];
             
             // 检查 dateData 是否为数组
             if (!Array.isArray(dateData)) {
@@ -2266,9 +2324,31 @@ async function layeredStorageSync() {
         console.log(`   文本数据: ${(JSON.stringify(textData).length / 1024 / 1024).toFixed(2)}MB`);
         console.log(`   图片数据: ${(totalImageSize / 1024 / 1024).toFixed(2)}MB (${imageCount}张)`);
         
-        await database.ref('text/' + currentUser).set(textData);
-        console.log('✅ 文本数据同步完成');
+        // 同步文本数据
+        const textSize = JSON.stringify(textData).length;
+        if (textSize > 10 * 1024 * 1024) { // 10MB
+            console.log('⚠️ 文本数据过大，分批同步');
+            const textDates = Object.keys(textData);
+            for (let i = 0; i < textDates.length; i += 5) {
+                const batchDates = textDates.slice(i, i + 5);
+                const batchData = {};
+                batchDates.forEach(date => {
+                    batchData[date] = textData[date];
+                });
+                
+                try {
+                    await database.ref('text/' + currentUser + '/batch_' + Math.floor(i/5)).set(batchData);
+                    console.log(`✅ 文本批次 ${Math.floor(i/5)+1} 同步完成`);
+                } catch (error) {
+                    console.error(`❌ 文本批次 ${Math.floor(i/5)+1} 同步失败:`, error);
+                }
+            }
+        } else {
+            await database.ref('text/' + currentUser).set(textData);
+            console.log('✅ 文本数据同步完成');
+        }
         
+        // 同步图片数据
         const imageDates = Object.keys(imageData);
         for (let i = 0; i < imageDates.length; i++) {
             const date = imageDates[i];
@@ -2276,11 +2356,30 @@ async function layeredStorageSync() {
             
             if (dateImageData.length > 0) {
                 try {
-                    await database.ref('images/' + currentUser + '/' + date).set(dateImageData);
-                    console.log(`✅ 图片数据同步完成: ${date}`);
+                    // 检查图片数据大小
+                    const dateImageSize = JSON.stringify(dateImageData).length;
+                    if (dateImageSize > 5 * 1024 * 1024) { // 5MB
+                        console.log(`⚠️ ${date} 图片数据过大，按知识点拆分`);
+                        
+                        for (let j = 0; j < dateImageData.length; j++) {
+                            const itemImageData = dateImageData[j];
+                            try {
+                                await database.ref('images/' + currentUser + '/' + date + '/item_' + j).set(itemImageData);
+                                console.log(`  ✅ 同步 ${date} 图片 ${j + 1}`);
+                            } catch (error) {
+                                console.error(`  ❌ 同步失败 ${date} 图片 ${j + 1}:`, error);
+                            }
+                        }
+                    } else {
+                        await database.ref('images/' + currentUser + '/' + date).set(dateImageData);
+                        console.log(`✅ 图片数据同步完成: ${date}`);
+                    }
                 } catch (error) {
                     console.error(`❌ 图片数据同步失败 ${date}:`, error);
                 }
+                
+                // 添加延迟，避免Firebase限制
+                await new Promise(resolve => setTimeout(resolve, 200));
             }
         }
         
@@ -2290,6 +2389,277 @@ async function layeredStorageSync() {
     } catch (error) {
         console.error('分层存储同步失败:', error);
         showSyncStatus('同步失败: ' + error.message, 3000);
+        throw error;
+    }
+}
+
+// 处理同步队列
+async function processSyncQueue() {
+    if (syncQueue.length === 0 || syncInProgress || !isOnline) return;
+    
+    console.log(`🔄 处理同步队列，待处理: ${syncQueue.length} 项`);
+    
+    syncInProgress = true;
+    
+    try {
+        // 处理队列中的项目
+        while (syncQueue.length > 0) {
+            const item = syncQueue.shift();
+            console.log(`处理队列项目: ${item.type} (${item.timestamp})`);
+            
+            if (item.type === 'full') {
+                // 完整同步
+                knowledgeData = item.data;
+                await handleSmartSync();
+            } else if (item.type === 'incremental') {
+                // 增量同步
+                await saveUserKnowledge();
+            }
+            
+            // 添加延迟，避免Firebase限制
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        
+        console.log('✅ 同步队列处理完成');
+        showSyncStatus('同步队列处理完成', 2000);
+        
+    } catch (error) {
+        console.error('处理同步队列失败:', error);
+        showSyncStatus('同步队列处理失败: ' + error.message, 3000);
+    } finally {
+        syncInProgress = false;
+    }
+}
+
+// 修复数据加载函数 - 处理分层存储和分批同步的数据
+async function loadUserKnowledge() {
+    if (!currentUser) return;
+    if (useLocalMode || !firebaseAvailable) {
+        knowledgeData = JSON.parse(localStorage.getItem('knowledge_' + currentUser) || '{}');
+        return;
+    }
+    try {
+        showSyncStatus('加载数据...');
+        console.log('📥 开始加载数据...');
+        
+        // 首先检查元数据，了解数据存储方式
+        const metadataSnapshot = await database.ref('metadata/' + currentUser).once('value');
+        const metadata = metadataSnapshot.val();
+        
+        if (metadata && metadata.syncStrategy) {
+            console.log(`📋 检测到${metadata.syncStrategy}存储策略，开始加载...`);
+            
+            if (metadata.syncStrategy === 'layered') {
+                // 加载分层存储数据
+                await loadLayeredData();
+            } else if (metadata.syncStrategy === 'batch') {
+                // 加载分批同步数据
+                await loadBatchData();
+            } else {
+                // 加载直接同步数据
+                await loadDirectData();
+            }
+        } else {
+            // 没有元数据，尝试直接加载
+            console.log('📋 未检测到存储策略，尝试直接加载...');
+            await loadDirectData();
+        }
+        
+        console.log('✅ 数据加载完成');
+        database.ref('users/' + currentUser + '/lastLogin').set(new Date().toISOString());
+        
+    } catch (error) {
+        console.error('加载数据错误:', error);
+        showSyncStatus('加载数据失败，尝试本地备份', 3000);
+        
+        // 尝试从本地存储加载
+        const localData = localStorage.getItem('knowledge_' + currentUser);
+        if (localData) {
+            knowledgeData = JSON.parse(localData);
+            console.log('✅ 从本地备份加载成功');
+            showSyncStatus('已从本地备份加载数据', 2000);
+        } else {
+            knowledgeData = {};
+        }
+    }
+}
+
+// 加载直接同步数据
+async function loadDirectData() {
+    const knowledgeRef = database.ref('knowledge/' + currentUser);
+    const snapshot = await knowledgeRef.once('value');
+    const data = snapshot.val();
+    
+    if (data && typeof data === 'object') {
+        // 处理分批数据
+        if (Object.keys(data).some(key => key.startsWith('batch_'))) {
+            console.log('🔄 检测到分批数据，正在合并...');
+            knowledgeData = {};
+            
+            for (const key in data) {
+                if (key.startsWith('batch_')) {
+                    const batchData = data[key];
+                    if (batchData && typeof batchData === 'object') {
+                        for (const date in batchData) {
+                            if (Array.isArray(batchData[date])) {
+                                if (!knowledgeData[date]) {
+                                    knowledgeData[date] = [];
+                                }
+                                knowledgeData[date] = knowledgeData[date].concat(batchData[date]);
+                            }
+                        }
+                    }
+                } else if (!key.startsWith('batch_') && !key.startsWith('item_')) {
+                    // 普通日期数据
+                    if (Array.isArray(data[key])) {
+                        knowledgeData[key] = data[key];
+                    }
+                }
+            }
+        } else {
+            // 普通数据
+            knowledgeData = data;
+        }
+    } else {
+        knowledgeData = {};
+    }
+}
+
+// 加载分批同步数据
+async function loadBatchData() {
+    knowledgeData = {};
+    
+    // 加载分批数据
+    const knowledgeRef = database.ref('knowledge/' + currentUser);
+    const snapshot = await knowledgeRef.once('value');
+    const data = snapshot.val();
+    
+    if (data && typeof data === 'object') {
+        for (const key in data) {
+            if (key.startsWith('batch_')) {
+                const batchData = data[key];
+                if (batchData && typeof batchData === 'object') {
+                    for (const date in batchData) {
+                        if (Array.isArray(batchData[date])) {
+                            if (!knowledgeData[date]) {
+                                knowledgeData[date] = [];
+                            }
+                            knowledgeData[date] = knowledgeData[date].concat(batchData[date]);
+                        }
+                    }
+                }
+            } else if (!key.startsWith('item_')) {
+                // 普通日期数据
+                if (Array.isArray(data[key])) {
+                    knowledgeData[key] = data[key];
+                }
+            }
+        }
+    }
+    
+    // 加载单独的知识点数据（拆分的大数据）
+    const allDates = Object.keys(knowledgeData);
+    for (const date of allDates) {
+        try {
+            const itemSnapshot = await database.ref('knowledge/' + currentUser + '/' + date).once('value');
+            const itemData = itemSnapshot.val();
+            
+            if (itemData && typeof itemData === 'object') {
+                const items = [];
+                for (const itemKey in itemData) {
+                    if (itemKey.startsWith('item_') && itemData[itemKey]) {
+                        items.push(itemData[itemKey]);
+                    }
+                }
+                
+                if (items.length > 0) {
+                    knowledgeData[date] = items;
+                }
+            }
+        } catch (error) {
+            console.warn(`加载 ${date} 的单独数据失败:`, error);
+        }
+    }
+}
+
+// 加载分层存储数据
+async function loadLayeredData() {
+    knowledgeData = {};
+    
+    // 加载文本数据
+    try {
+        const textRef = database.ref('text/' + currentUser);
+        const textSnapshot = await textRef.once('value');
+        const textData = textSnapshot.val();
+        
+        if (textData && typeof textData === 'object') {
+            // 处理分批文本数据
+            if (Object.keys(textData).some(key => key.startsWith('batch_'))) {
+                for (const batchKey in textData) {
+                    const batchData = textData[batchKey];
+                    if (batchData && typeof batchData === 'object') {
+                        for (const date in batchData) {
+                            if (Array.isArray(batchData[date])) {
+                                knowledgeData[date] = batchData[date];
+                            }
+                        }
+                    }
+                }
+            } else {
+                // 普通文本数据
+                for (const date in textData) {
+                    if (Array.isArray(textData[date])) {
+                        knowledgeData[date] = textData[date];
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.error('加载文本数据失败:', error);
+    }
+    
+    // 加载图片数据并合并
+    try {
+        const imagesRef = database.ref('images/' + currentUser);
+        const imagesSnapshot = await imagesRef.once('value');
+        const imageData = imagesSnapshot.val();
+        
+        if (imageData && typeof imageData === 'object') {
+            for (const date in imageData) {
+                const dateImageData = imageData[date];
+                
+                if (Array.isArray(dateImageData)) {
+                    // 普通图片数据
+                    dateImageData.forEach(itemImageData => {
+                        if (itemImageData && itemImageData.id && itemImageData.images) {
+                            const knowledgeIndex = knowledgeData[date].findIndex(k => k.id === itemImageData.id);
+                            if (knowledgeIndex !== -1) {
+                                knowledgeData[date][knowledgeIndex].images = itemImageData.images;
+                            }
+                        }
+                    });
+                } else if (typeof dateImageData === 'object') {
+                    // 处理拆分的图片数据
+                    const items = [];
+                    for (const itemKey in dateImageData) {
+                        if (itemKey.startsWith('item_') && dateImageData[itemKey]) {
+                            items.push(dateImageData[itemKey]);
+                        }
+                    }
+                    
+                    items.forEach(itemImageData => {
+                        if (itemImageData && itemImageData.id && itemImageData.images) {
+                            const knowledgeIndex = knowledgeData[date].findIndex(k => k.id === itemImageData.id);
+                            if (knowledgeIndex !== -1) {
+                                knowledgeData[date][knowledgeIndex].images = itemImageData.images;
+                            }
+                        }
+                    });
+                }
+            }
+        }
+    } catch (error) {
+        console.error('加载图片数据失败:', error);
     }
 }
 
@@ -2965,26 +3335,6 @@ function showApp() {
     // 初始化数据统计
     updateDataStats();
     renderKnowledge();
-}
-
-// 加载用户数据
-async function loadUserKnowledge() {
-    if (!currentUser) return;
-    if (useLocalMode || !firebaseAvailable) {
-        knowledgeData = JSON.parse(localStorage.getItem('knowledge_' + currentUser) || '{}');
-        return;
-    }
-    try {
-        showSyncStatus('加载数据...');
-        const knowledgeRef = database.ref('knowledge/' + currentUser);
-        const snapshot = await knowledgeRef.once('value');
-        knowledgeData = snapshot.val() || {};
-        database.ref('users/' + currentUser + '/lastLogin').set(new Date().toISOString());
-    } catch (error) {
-        console.error('加载数据错误:', error);
-        showSyncStatus('加载数据失败', 2000);
-        knowledgeData = {};
-    }
 }
 
 // 保存用户数据
@@ -3731,8 +4081,7 @@ function showImportPreview(data) {
     const importPreview = document.getElementById('import-preview');
     const previewTable = document.getElementById('preview-table');
     const importSummary = document.getElementById('import-summary');
-
-    if (!importPreview || !previewTable || !importSummary) return;
+	    if (!importPreview || !previewTable || !importSummary) return;
 
     let tableHTML = `
 <thead>
